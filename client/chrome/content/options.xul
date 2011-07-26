@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="options.css" type="text/css"?>
+
+<dialog id="convergence-options" title="Convergence Notary Preferences" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" width="620" height="350" buttons="accept,cancel" onload="onOptionsLoad();" ondialogaccept="return onOptionsSave();">
+
+<script src="options.js" />
+
+<tabbox flex="1">
+  <tabs>
+    <tab label="Notaries"/>
+    <tab label="Advanced"/>
+  </tabs>
+  <tabpanels flex="1">
+    <tabpanel id="settingsTab" flex="1">
+      <vbox flex="1">
+	<hbox flex="1">
+
+	  <tree id="notaryTree" align="stretch" flex="1" editable="true">
+	    <treecols>
+	      <treecol id="notaryEnabled" label="Enabled" type="checkbox" editable="true" />
+	      <splitter class="tree-splitter" />
+	      <treecol id="notaryHost" label="Notary Hostname    " flex="1" editable="false"/>
+	      <splitter class="tree-splitter" />
+	      <treecol id="notaryHTTPPort" label="HTTP" flex="1" editable="false"/>
+	      <splitter class="tree-splitter" />
+	      <treecol id="notarySSLPort" label="SSL" flex="1" editable="false"/>
+	    </treecols>
+	    <treechildren />  
+	  </tree>
+
+	  <separator />
+	  <vbox flex="0">
+	    <button id="add-notary-button" pack="start" label="Add Notary" onclick="onAddNotary();" />
+	    <button id="edit-notary-button" pack="start" label="Edit Notary" onclick="onEditNotary();" />
+	    <button id="remove-notary-button" pack="start" label="Remove Notary" onclick="onRemoveNotary();"/>
+	  </vbox>
+	</hbox>
+      </vbox>
+    </tabpanel>
+    <tabpanel id="advancedTab">
+      <vbox flex="0">	
+	<checkbox id="cache-certificates" label="Cache certificates locally." />
+	<checkbox id="notary-bounce" label="Anonymize communication with notaries." />
+	<checkbox id="connectivity-failure" label="Notary connectivity failure counts as authenticity failure."/>
+
+	<groupbox>
+	  <caption label="Verification Threshold"/>
+	  <radiogroup id="threshold">
+	    <radio id="consensus" label="Require notary conesnsus." />
+	    <radio id="majority" label="Require notary majority." />
+	    <radio id="minority" label="Require only one notary to agree." />
+	  </radiogroup>
+	</groupbox>
+	</vbox>
+    </tabpanel>
+  </tabpanels>
+</tabbox>
+
+ 
+</dialog>

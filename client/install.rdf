@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+
+  <Description about="urn:mozilla:install-manifest">
+    <em:id>convergence@extension.thoughtcrime.org</em:id>
+    <em:version>0.01</em:version>
+    <em:type>2</em:type>
+    <em:optionsURL>chrome://convergence/content/options.xul</em:optionsURL>
+    <em:unpack>true</em:unpack>
+    <em:updateKey>MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4odEzbaXUBFGhDyQHNWZ2sWIdlsxqM+iPTsQlFzH6hGwT7MyqdNzRFPcsBp8aX89ToCB73AUW8ua64VdQf3mCSXzK5rZH+zIXTGpORr+nVEhpVsAzL2Nja1vvScMroVN9EonNNHyux//InXFW8oobMAyKg+BJgpaikdly8K8IKQIDAQAB</em:updateKey>
+    <em:updateURL>http://convergence.io/updates/update.text=rdf</em:updateURL>
+   
+    <!-- Target Application this extension can install into, 
+         with minimum and maximum supported versions. --> 
+    <em:targetApplication>
+      <Description>
+        <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
+        <em:minVersion>4.0</em:minVersion>
+        <em:maxVersion>5.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+   
+    <!-- Front End MetaData -->
+    <em:name>Convergence</em:name>
+    <em:description>A secure, agile, and distributed replacement for the Certificate Authority system.</em:description>
+    <em:creator>Moxie Marlinspike</em:creator>
+    <em:homepageURL>http://convergence.io</em:homepageURL>
+  </Description>      
+</RDF>

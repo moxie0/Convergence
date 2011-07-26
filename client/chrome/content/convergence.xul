@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<overlay id="sample" 
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+ <script src="convergence.js"/> 
+ <script src="CertificateStatus.js"/>
+
+ <toolbarpalette id="BrowserToolbarPalette">
+   <toolbarbutton id="convergence-button" class="toolbarbutton-1"
+		  type="menu-button" autoCheck="false"
+		  label="Convergence!" tooltiptext="Toggle!"
+		  oncommand="Convergence.onToolBarClick(event);">
+
+     <menupopup>
+       <menuitem label="Disable" id="convergence-menu-toggle"/>
+       <menuitem label="Options" oncommand="window.openDialog('chrome://convergence/content/options.xul', 'dialog', 'modal');"/>
+     </menupopup>
+
+   </toolbarbutton>
+
+ </toolbarpalette>
+
+</overlay>
+

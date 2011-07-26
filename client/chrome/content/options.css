@@ -1,0 +1,18 @@
+@import url(chrome://global/skin/);
+
+treechildren::-moz-tree-checkbox {
+  list-style-image: none;
+}
+
+treechildren::-moz-tree-checkbox(checked) {
+  list-style-image: url("chrome://convergence/content/images/cbox-check.gif");
+}
+
+tree {min-height: 50px;}
+
+#up-button {
+  list-style-image: url("chrome://convergence/content/images/up.gif");
+}
+#down-button {
+  list-style-image: url("chrome://convergence/content/images/down.gif");
+}

@@ -1,3 +1,33 @@
+// Copyright (c) 2011 Moxie Marlinspike <moxie@thoughtcrime.org>
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 3 of the
+// License, or (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+// USA
+
+
+/**
+ * This ChromeWorker is responsible for two things:
+ *
+ * 1) Listening to the ServerSocket FD for incoming connection requests,
+ * which it then hands off to its parent.
+ *
+ * 2) Shuffling data between pairs of established SSL connections, 
+ * effectively moving data across the MITM bridge.
+ *
+ * It is setup by the ConnectionManager in components.
+ *
+ **/
+
 importScripts("chrome://convergence/content/ctypes/NSPR.js",
 	      "chrome://convergence/content/ctypes/NSS.js",
 	      "chrome://convergence/content/ctypes/SSL.js",

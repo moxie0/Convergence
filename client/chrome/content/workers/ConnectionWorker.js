@@ -1,3 +1,33 @@
+// Copyright (c) 2011 Moxie Marlinspike <moxie@thoughtcrime.org>
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 3 of the
+// License, or (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+// USA
+
+
+/**
+ * This ChromeWorker is responsible for establishing an SSL connection
+ * to the destination server, validating the target's SSL certificate
+ * with the local cache or with the configured notaries, and then
+ * establishing an SSL connection with the client.
+ *
+ * It then passes off the pair of established connections to its parent,
+ * which hands them to the ShuffleWorker for all further shuffling.
+ *
+ * This is setup by the ConnectionManager in "components."
+ *
+ **/
+
 
 importScripts("chrome://convergence/content/ctypes/NSPR.js",
 	      "chrome://convergence/content/ctypes/NSS.js",
@@ -14,7 +44,6 @@ importScripts("chrome://convergence/content/ctypes/NSPR.js",
 	      "chrome://convergence/content/protocols/SOCKS5Connector.js",
 	      "chrome://convergence/content/protocols/ProxyConnector.js",
 	      "chrome://convergence/content/ssl/CertificateInfo.js",
-	      "chrome://convergence/content/ssl/NotaryResponse.js",
 	      "chrome://convergence/content/ssl/Notary.js",
 	      "chrome://convergence/content/ssl/NativeCertificateCache.js",
 	      "chrome://convergence/content/ssl/ActiveNotaries.js",

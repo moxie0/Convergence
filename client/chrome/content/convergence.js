@@ -1,5 +1,4 @@
-// Copyright (c) 2010 Moxie Marlinspike <moxie@thoughtcrime.org>
-
+// Copyright (c) 2011 Moxie Marlinspike <moxie@thoughtcrime.org>
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 3 of the
@@ -14,6 +13,14 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
+
+
+/**
+ * This class is the main entrypoint for the Convergence front-end.
+ * It is responspible for kicking off the back-end, and initializing
+ * the front end visual components.
+ *
+ **/
 
 Components.utils.import("resource://gre/modules/NetUtil.jsm");
 

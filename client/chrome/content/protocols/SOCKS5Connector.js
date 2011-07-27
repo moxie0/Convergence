@@ -1,3 +1,26 @@
+// Copyright (c) 2011 Moxie Marlinspike <moxie@thoughtcrime.org>
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 3 of the
+// License, or (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+// USA
+
+
+/**
+ * This class is responsible for building a tunnel through an external
+ * SOCKS5 proxy.
+ *
+ **/
+
 function SOCKS5Connector() {
 
 }
@@ -10,7 +33,6 @@ SOCKS5Connector.prototype.sendClientHello = function(proxySocket) {
 SOCKS5Connector.prototype.readServerHello = function(proxySocket) {
   var serverHello = proxySocket.readFully(2);
 
-  // if (serverHello.charCodeAt(1) == 255) 
   if (serverHello[1] == 0xFF)
     throw "Server requires authentication, which we don't support!";
 };
@@ -21,26 +43,10 @@ SOCKS5Connector.prototype.sendConnectRequest = function(proxySocket, host, port)
 		 String.fromCharCode(0x00), String.fromCharCode(0x03),
 		 String.fromCharCode(host.length)];
 
-  var status = proxySocket.writeBytes(NSPR.lib.buffer(request.join('')), 5);
-
-  dump("Wrote byets: " + status + "\n");
-  var status = proxySocket.writeBytes(NSPR.lib.buffer(host), host.length);
-  dump("Wrote bytes: " + status + "\n");
-
-  // var portType = ctypes.ArrayType(ctypes.uint8_t);
-  // var portPtr  = portType([((port >> 8) & 0xFF), (port & 0xFF)]);
-  // var portPtr = new ctypes.ArrayType(ctypes.uint8_t, 2);
-  // portPtr[0]  = ;
-  // portPtr[1]  = ;
-
+  var status    = proxySocket.writeBytes(NSPR.lib.buffer(request.join('')), 5);
+  var status    = proxySocket.writeBytes(NSPR.lib.buffer(host), host.length);
   var portBytes = [ctypes.unsigned_char((port >> 8) & 0xFF), ctypes.unsigned_char(port & 0xFF)];
-  // var portBytes = [String.fromCharCode((port) & 0xFF), String.fromCharCode((port >> 8) & 0xFF)];
-  // var buffer = NSPR.lib.buffer(portBytes.join(''));
-  
-  // dump("Port bytes: " + portBytes[0] + "," + portBytes[1] + "\n");
-  // dump("Buffer: " + portPtr + "\n");
-  var status = proxySocket.writeBytes(NSPR.lib.unsigned_buffer(portBytes), 2);
-  dump("Wrote bytes: " + status + "\n");
+  var status    = proxySocket.writeBytes(NSPR.lib.unsigned_buffer(portBytes), 2);
 };
 
 SOCKS5Connector.prototype.readConnectResponse = function(proxySocket, host) {
@@ -48,20 +54,15 @@ SOCKS5Connector.prototype.readConnectResponse = function(proxySocket, host) {
 
   dump("Got response: " + response[1] + "\n");
 
-  // if (response.charCodeAt(1) != 0) 
   if (response[1] != 0x00)
     throw "SOCKS Proxy denied connection request (" + response[1] + ")!";
 
-  // if (response.charCodeAt(3) == 1) {
   if (response[3] == 0x01) {
     proxySocket.readFully(6);
-  // } else if (response.charCodeAt(3) == 4) {
   } else if (response[3] == 0x04) {
     proxySocket.readFully(18);
-  // } else if (response.charCodeAt(3) == 3) {
   } else if (response[3] == 0x03) {
     var domainLength = proxySocket.readFully(1);
-    // domainLength     = domainLength.charCodeAt(0);
     domainLength     = ctypes.cast(domainLength[0], ctypes.int32_t);
     proxySocket.readFully(domainLength+2);
   } else {

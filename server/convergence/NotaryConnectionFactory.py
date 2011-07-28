@@ -1,4 +1,4 @@
-# Copyright (c) 2010 Moxie Marlinspike
+# Copyright (c) 2011 Moxie Marlinspike
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -18,6 +18,8 @@
 
 from twisted.internet.protocol import ClientFactory
 import logging
+
+# The ConnectionFactory for a proxy tunnel to another notary.
 
 class NotaryConnectionFactory(ClientFactory):
 

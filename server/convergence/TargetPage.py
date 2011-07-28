@@ -1,3 +1,21 @@
+# Copyright (c) 2011 Moxie Marlinspike
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+# USA
+#
+
 import hashlib, json, base64, logging
 from M2Crypto import BIO, RSA
 
@@ -10,6 +28,11 @@ from FingerprintDatabase import FingerprintDatabase
 from CertificateFetcher import CertificateFetcher
 from CacheUpdater import CacheUpdater
 from NotaryResponse import NotaryResponse
+
+# This class is responsible for responding to actions
+# on the REST noun "target," which results in triggering
+# verification or returning certificate histories for
+# a destination target.
 
 class TargetPage(Resource):
 

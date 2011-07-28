@@ -1,4 +1,4 @@
-# Copyright (c) 2010 Moxie Marlinspike
+# Copyright (c) 2011 Moxie Marlinspike
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -19,6 +19,9 @@
 import re, string, logging
 
 from twisted.internet.protocol import BaseProtocol
+
+# This class is resonsible for setting up the proxy tunnel to another
+# notary.
 
 class NotaryConnection(BaseProtocol):
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2010 Moxie Marlinspike
+# Copyright (c) 2011 Moxie Marlinspike
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -20,6 +20,8 @@ from twisted.web.http import HTTPChannel
 from ConnectRequest import ConnectRequest
 
 import logging
+
+# The HTTPChannel for incoming CONNECT requests to other notaries.
 
 class ConnectChannel(HTTPChannel):
     requestFactory = ConnectRequest

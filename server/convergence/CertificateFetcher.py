@@ -1,3 +1,21 @@
+# Copyright (c) 2011 Moxie Marlinspike
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+# USA
+#
+
 
 from twisted.internet import reactor, defer
 from twisted.internet import ssl, reactor
@@ -6,6 +24,9 @@ from twisted.internet.ssl import ContextFactory
 
 from OpenSSL.SSL import Context, SSLv23_METHOD, TLSv1_METHOD, VERIFY_PEER, VERIFY_FAIL_IF_NO_PEER_CERT, OP_NO_SSLv2
 import logging
+
+# This class is responsible for connecting to the target
+# and returning its SSL certificate.
 
 class CertificateFetcherClient(Protocol):
     def __init__(self, deferred):

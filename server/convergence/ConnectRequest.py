@@ -1,4 +1,4 @@
-# Copyright (c) 2010 Moxie Marlinspike
+# Copyright (c) 2011 Moxie Marlinspike
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -23,6 +23,11 @@ from NotaryConnectionFactory import NotaryConnectionFactory
 from NotaryConnection import NotaryConnection
 
 import re, logging
+
+# This class is responsible for parsing incoming requests
+# on the HTTP port.  The only method it supports is CONNECT,
+# and will only setup a proxy tunnel to a destination port
+# of 4242.
 
 class ConnectRequest(Request):
 

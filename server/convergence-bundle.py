@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-"""convergence-bundle produces notary 'bundles', which can be easily imported to a web browser."""
+"""convergence-bundle produces notary 'bundles', which can be easily
+imported to a web browser."""
 
 __author__ = "Moxie Marlinspike"
 __email__  = "moxie@thoughtcrime.org"

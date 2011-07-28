@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""notary implements the Convergence Notary System."""
+"""convergence-notary implements the Convergence Notary System."""
 
 __author__ = "Moxie Marlinspike"
 __email__  = "moxie@thoughtcrime.org"

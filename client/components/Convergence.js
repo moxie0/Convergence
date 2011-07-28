@@ -256,7 +256,7 @@ var loadScript = function(isChrome, subdir, filename) {
     var path = __LOCATION__.parent.clone();
 
     if (isChrome) {
-      path.append("..");
+      path = path.parent.clone();
       path.append("chrome");
       path.append("content");
     }

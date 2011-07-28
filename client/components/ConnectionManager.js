@@ -117,14 +117,15 @@ ConnectionManager.prototype.spawnConnection = function(clientSocket) {
 
 ConnectionManager.prototype.initializeShuffleWorker = function() {
   dump("Initializing shuffleworker...\n");
-  this.wakeupRead  = NSPR.types.PRFileDesc.ptr(0);
-  this.wakeupWrite = NSPR.types.PRFileDesc.ptr(0);
-  
-  var status = NSPR.lib.PR_CreatePipe(this.wakeupRead.address(), this.wakeupWrite.address());
-  
+  var socketPair = NSPR.types.PRFileDescPtrArray(2);  
+  var status     = NSPR.lib.PR_NewTCPSocketPair(socketPair);
+
   if (status == -1) {
     throw "Error constructing pipe!";
   }
+
+  this.wakeupRead = socketPair[0];
+  this.wakeupWrite = socketPair[1];
   
   var connectionManager = this;
   var shuffleWorker     = this.workerFactory
@@ -135,12 +136,17 @@ ConnectionManager.prototype.initializeShuffleWorker = function() {
     connectionManager.spawnConnection(event.data.clientSocket);
   };
 
-  shuffleWorker.postMessage({'type' : TYPE_INITIALIZE, 
-  	                     'fd' : Serialization.serializePointer(this.wakeupRead),
-  	                     'serverSocket' : this.serverSocket.serialize(),
-  	                     'nssFile' : this.nssFile.path,
-	                     'sslFile' : this.sslFile.path,
-  	                     'nsprFile' : this.nsprFile.path});
+  dump("Posting...\n");
 
+  try {
+    shuffleWorker.postMessage({'type' : TYPE_INITIALIZE, 
+	  'fd' : Serialization.serializePointer(this.wakeupRead),
+	  'serverSocket' : this.serverSocket.serialize(),
+	  'nssFile' : this.nssFile.path,
+	  'sslFile' : this.sslFile.path,
+	  'nsprFile' : this.nsprFile.path});
+  } catch (e) {
+    dump("Posting error: " + e + " , " + e.stack + "\n");
+  }
   return shuffleWorker;
 };

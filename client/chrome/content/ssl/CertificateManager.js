@@ -46,8 +46,11 @@ CertificateManager.prototype.signCertificate = function(certificate) {
 
   var der = NSS.types.SECItem();
 
+  // NSS.lib.SEC_ASN1EncodeItem(certificate.contents.arena, der.address(), 
+  // 			     certificate, NSS.lib.CERT_CertificateTemplate.address());
+
   NSS.lib.SEC_ASN1EncodeItem(certificate.contents.arena, der.address(), 
-			     certificate, NSS.lib.CERT_CertificateTemplate.address());
+  			     certificate, NSS.lib.NSS_Get_CERT_CertificateTemplate());
 
   NSS.lib.SEC_DerSignData(certificate.contents.arena, 
 			  certificate.contents.derCert.address(), 

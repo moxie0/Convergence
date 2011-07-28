@@ -178,8 +178,12 @@ NSS.initialize = function(nssPath) {
     buffer : ctypes.ArrayType(ctypes.char),
     ubuffer : ctypes.ArrayType(ctypes.unsigned_char),
 
-    CERT_CertificateTemplate : sharedLib.declare("CERT_CertificateTemplate",
-						 NSS.types.SEC_ASN1Template),
+    // CERT_CertificateTemplate : sharedLib.declare("CERT_CertificateTemplate",
+    // 						 NSS.types.SEC_ASN1Template),
+
+    NSS_Get_CERT_CertificateTemplate : sharedLib.declare("NSS_Get_CERT_CertificateTemplate",
+							 ctypes.default_abi,
+							 NSS.types.SEC_ASN1Template.ptr),
 
     PK11_HashBuf : sharedLib.declare("PK11_HashBuf",
     				     ctypes.default_abi,

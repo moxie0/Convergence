@@ -46,7 +46,7 @@
 	<groupbox>
 	  <caption label="Verification Threshold"/>
 	  <radiogroup id="threshold">
-	    <radio id="consensus" label="Require notary conesnsus." />
+	    <radio id="consensus" label="Require notary consensus." />
 	    <radio id="majority" label="Require notary majority." />
 	    <radio id="minority" label="Require only one notary to agree." />
 	  </radiogroup>

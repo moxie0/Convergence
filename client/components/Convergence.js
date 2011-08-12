@@ -180,6 +180,7 @@ Convergence.prototype = {
     var observerService = Components.classes["@mozilla.org/observer-service;1"]
     .getService(Components.interfaces.nsIObserverService);
     observerService.addObserver(this, "quit-application", false);
+    observerService.addObserver(this, "network:offline-status-changed", false);
   },
 
   registerProxyObserver: function() {
@@ -191,8 +192,17 @@ Convergence.prototype = {
   },
 
   observe: function(subject, topic, data) {
-    dump("Got application shutdown request...\n");
-    this.connectionManager.shutdown();
+    if (topic == 'quit-application') {
+      dump("Got application shutdown request...\n");
+      this.connectionManager.shutdown();      
+    } else if (topic == 'network:offline-status-changed') {
+      if (data == 'online') {
+	dump("Got network state change, shutting down serversocket...\n");
+	this.connectionManager.shutdown();
+	dump("Initializing serversocket...\n");
+	this.initializeConnectionManager();
+      }
+    }
   },
 
   isNotaryUri: function(uri) {

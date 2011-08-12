@@ -1,10 +1,17 @@
 import os, shutil
 from distutils.core import setup, Extension
 
-shutil.copyfile("convergence-notary.py", "convergence/convergence-notary")
-shutil.copyfile("convergence-gencert.py", "convergence/convergence-gencert")
-shutil.copyfile("convergence-createdb.py", "convergence/convergence-createdb")
-shutil.copyfile("convergence-bundle.py", "convergence/convergence-bundle")
+# Name of convergence directory
+DIR = "convergence"
+# List of scripts to install
+SCRIPTS = ["convergence-notary",
+            "convergence-gencert",
+            "convergence-createdb",
+            "convergence-bundle"]
+
+# Copy and rename python scripts
+for s in SCRIPTS:
+    shutil.copyfile(s + ".py", os.path.join(DIR, s))
 
 setup  (name        = 'convergence-notary',
         version     = '0.01',
@@ -15,7 +22,7 @@ setup  (name        = 'convergence-notary',
         license = 'GPL',
         packages  = ["convergence"],
         package_dir = {'convergence' : 'convergence/'},
-        scripts = ['convergence/convergence-notary', 'convergence/convergence-gencert', 'convergence/convergence-createdb', 'convergence/convergence-bundle'],
+        scripts = [os.path.join(DIR, s) for s in SCRIPTS],
         data_files = [('share/convergence', ['README', 'INSTALL', 'COPYING']),
                       ('/etc/init.d', ['init-script/convergence'])]
        )
@@ -24,13 +31,12 @@ print "Cleaning up..."
 if os.path.exists("build/"):
     shutil.rmtree("build/")
 
-try:
-    os.remove("convergence/convergence-notary")
-    os.remove("convergence/convergence-bundle")
-    os.remove('convergence/convergence-createdb')
-    os.remove("convergence/convergence-gencert")
-except:
-    pass
+# remove renamed scripts from temporary location
+for s in SCRIPTS:
+    try:
+        os.remove(os.path.join(DIR, s))
+    except:
+        pass
 
 def capture(cmd):
     return os.popen(cmd).read().strip()

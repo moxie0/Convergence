@@ -48,6 +48,9 @@ function ConvergenceDestinationSocket(host, port, proxy) {
   var status = NSPR.lib.PR_Connect(this.fd, netAddress, NSPR.lib.PR_SecondsToInterval(5));
 
   if (status != 0) {
+    NSPR.lib.PR_Free(netAddressBuffer);
+    NSPR.lib.PR_FreeAddrInfo(addrInfo);
+    NSPR.lib.PR_Close(this.fd);
     throw "Failed to connect to " + host + " : " + port + " -- " + NSPR.lib.PR_GetError();
   }
 

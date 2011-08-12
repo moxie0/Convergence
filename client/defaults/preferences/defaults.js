@@ -1,1 +1,0 @@
-pref("googlesharing.restart-count", 0);

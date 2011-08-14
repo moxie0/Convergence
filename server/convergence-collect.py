@@ -23,8 +23,18 @@ USA
 
 """
 
-from twisted.internet import epollreactor
-epollreactor.install()
+# BSD and Mac OS X, kqueue
+try:
+    from twisted.internet import kqreactor as event_reactor
+except:
+    # Linux 2.6 and newer, epoll
+    try:
+        from twisted.internet import epollreactor as event_reactor
+    except:
+        # Linux pre-2.6, poll
+        from twisted.internet import pollreactor as event_reactor
+
+event_reactor.install()
 
 from twisted.enterprise import adbapi
 from twisted.internet import reactor

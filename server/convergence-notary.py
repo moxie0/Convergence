@@ -66,17 +66,19 @@ class ServerContextFactory:
         return ctx
 
 def parseOptions(argv):
-    logLevel   = logging.INFO
-    httpPort   = 80
-    sslPort    = 443
+    logLevel          = logging.INFO
+    httpPort          = 80
+    sslPort           = 443
     incomingInterface = ''
     outgoingInterface = None
-    certFile   = "/etc/ssl/certs/convergence.pem"
-    keyFile    = "/etc/ssl/private/convergence.key"
-    background = True
+    certFile          = "/etc/ssl/certs/convergence.pem"
+    keyFile           = "/etc/ssl/private/convergence.key"
+    uname             = "nobody"
+    gname             = "nogroup"
+    background        = True
 
     try:
-        opts, args = getopt.getopt(argv, "s:p:i:o:c:k:fdh")
+        opts, args = getopt.getopt(argv, "s:p:i:o:c:k:u:g:fdh")
 
         for opt, arg in opts:
             if opt in("-p"):
@@ -91,6 +93,10 @@ def parseOptions(argv):
                 certFile = arg
             elif opt in ("-k"):
                 keyFile = arg
+            elif opt in ("-u"):
+                uname = arg
+            elif opt in ("-g"):
+                gname = arg
             elif opt in ("-d"):
                 logLevel = logging.DEBUG
             elif opt in ("-f"):
@@ -100,7 +106,7 @@ def parseOptions(argv):
                 sys.exit()
         
         return (logLevel, sslPort, httpPort,
-                certFile, keyFile, background,
+                certFile, keyFile, uname, gname, background,
                 incomingInterface, outgoingInterface)
 
     except getopt.GetoptError:
@@ -117,6 +123,8 @@ def usage():
     print "-o <address>   IP address to bind to for making outgoing connections (optional)."
     print "-c <cert>      SSL certificate location."
     print "-k <key>       SSL private key location."
+    print "-u <username>  Name of user to drop privileges to (optional, defaults to 'nobody')"
+    print "-g <group>     Name of group to drop privileges to (optional, defaults to 'nogroup')"
     print "-f             Run in foreground."
     print "-d             Debug mode."
     print "-h             Print this help message."
@@ -127,13 +135,21 @@ def writePidFile():
     pidFile.write(str(os.getpid()))
     pidFile.close()
     
-def dropPrivileges():
-    nobody = pwd.getpwnam('nobody')
-    adm    = grp.getgrnam('nogroup')
+def dropPrivileges(uname, gname):
+    try:
+        user = pwd.getpwnam(uname)
+    except KeyError:
+        print >> sys.stderr, 'User ' + uname + ' does not exist, cannot drop privileges'
+        sys.exit(2)
+    try:
+        group = grp.getgrnam(gname)
+    except KeyError:
+        print >> sys.stderr, 'Group ' + gname + ' does not exist, cannot drop privileges'
+        sys.exit(2)
     
-    os.setgroups([adm.gr_gid])
-    os.setgid(adm.gr_gid)
-    os.setuid(nobody.pw_uid)
+    os.setgroups([group.gr_gid])
+    os.setgid(group.gr_gid)
+    os.setuid(user.pw_uid)
 
 def initializeLogging(logLevel):
     logging.basicConfig(filename="/var/log/convergence.log",level=logLevel, 
@@ -155,7 +171,8 @@ def initializeKey(keyFile):
 
 def main(argv):
     (logLevel, sslPort, httpPort,
-     certFile, keyFile, background,
+     certFile, keyFile,
+     uname, gname, background,
      incomingInterface, outgoingInterface) = parseOptions(argv)
     privateKey                             = initializeKey(keyFile)
     database                               = initializeDatabase()
@@ -181,7 +198,7 @@ def main(argv):
         print "\nconvergence " + str(gVersion) + " by Moxie Marlinspike running..."
 
     writePidFile()
-#    dropPrivileges()                
+    # dropPrivileges(uname, gname)
 
     reactor.run()
 

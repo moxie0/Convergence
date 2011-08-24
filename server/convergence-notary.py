@@ -69,18 +69,24 @@ def parseOptions(argv):
     logLevel   = logging.INFO
     httpPort   = 80
     sslPort    = 443
+    incomingInterface = ''
+    outgoingInterface = None
     certFile   = "/etc/ssl/certs/convergence.pem"
     keyFile    = "/etc/ssl/private/convergence.key"
     background = True
 
     try:
-        opts, args = getopt.getopt(argv, "s:p:c:k:fdh")
+        opts, args = getopt.getopt(argv, "s:p:i:o:c:k:fdh")
 
         for opt, arg in opts:
             if opt in("-p"):
                 httpPort = int(arg)
             elif opt in ("-s"):
                 sslPort = int(arg)
+            elif opt in ("-i"):
+                incomingInterface = arg
+            elif opt in ("-o"):
+                outgoingInterface = (arg, 0)
             elif opt in ("-c"):
                 certFile = arg
             elif opt in ("-k"):
@@ -94,7 +100,8 @@ def parseOptions(argv):
                 sys.exit()
         
         return (logLevel, sslPort, httpPort,
-                certFile, keyFile, background)
+                certFile, keyFile, background,
+                incomingInterface, outgoingInterface)
 
     except getopt.GetoptError:
         usage()
@@ -106,6 +113,8 @@ def usage():
     print "Options:"
     print "-p <http_port> HTTP port to listen on."
     print "-s <ssl_port>  SSL port to listen on."
+    print "-i <address>   IP address to listen on for incoming connections (optional)."
+    print "-o <address>   IP address to bind to for making outgoing connections (optional)."
     print "-c <cert>      SSL certificate location."
     print "-k <key>       SSL private key location."
     print "-f             Run in foreground."
@@ -146,16 +155,21 @@ def initializeKey(keyFile):
 
 def main(argv):
     (logLevel, sslPort, httpPort,
-     certFile, keyFile, background) = parseOptions(argv)
-    privateKey                      = initializeKey(keyFile)
-    database                        = initializeDatabase()
-    sslFactory                      = initializeFactory(database, privateKey)
-    connectFactory                  = http.HTTPFactory(timeout=10)
-    connectFactory.protocol         = ConnectChannel
+     certFile, keyFile, background,
+     incomingInterface, outgoingInterface) = parseOptions(argv)
+    privateKey                             = initializeKey(keyFile)
+    database                               = initializeDatabase()
+    sslFactory                             = initializeFactory(database, privateKey)
+    connectFactory                         = http.HTTPFactory(timeout=10)
+    connectFactory.protocol                = ConnectChannel
+    connectFactory.outgoingInterface       = outgoingInterface
     
-    reactor.listenSSL(sslPort, sslFactory, ServerContextFactory(certFile, keyFile))
-    reactor.listenSSL(4242, sslFactory, ServerContextFactory(certFile, keyFile))
-    reactor.listenTCP(port=httpPort, factory=connectFactory)
+    reactor.listenSSL(sslPort, sslFactory,
+        ServerContextFactory(certFile, keyFile), interface=incomingInterface)
+    reactor.listenSSL(4242, sslFactory,
+        ServerContextFactory(certFile, keyFile), interface=incomingInterface)
+    reactor.listenTCP(port=httpPort, factory=connectFactory,
+        interface=incomingInterface)
 
         
     initializeLogging(logLevel)

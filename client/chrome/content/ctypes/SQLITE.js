@@ -26,6 +26,15 @@ function SQLITE() {
 }
 
 SQLITE.initialize = function(sqlitePath) {  
+  var sharedLib;
+
+  try {
+    sharedLib = ctypes.open(sqlitePath);    
+  } catch (e) {
+    dump("Failed to find mozsqlite3 in installed directory, checking system paths for sqlite3.\n");
+    sharedLib = ctypes.open(ctypes.libraryName("sqlite3"));
+  }
+
   var sharedLib = ctypes.open(sqlitePath);
 
   SQLITE.types = new Object();

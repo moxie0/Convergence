@@ -26,7 +26,14 @@ function SSL() {
 }
 
 SSL.initialize = function(sslPath) {  
-  var sharedLib = ctypes.open(sslPath);
+  var sharedLib;
+
+  try {
+    sharedLib = ctypes.open(sslPath);    
+  } catch (e) {
+    dump("Failed to find ssl3 in installed directory, checking system paths.\n");
+    sharedLib = ctypes.open(ctypes.libraryName("ssl3"));
+  }
 
   SSL.types = new Object();
 

@@ -26,7 +26,14 @@ function NSS() {
 }
 
 NSS.initialize = function(nssPath) {  
-  var sharedLib = ctypes.open(nssPath);
+  var sharedLib;
+
+  try {
+    sharedLib = ctypes.open(nssPath);    
+  } catch (e) {
+    dump("Failed to find nss3 in installed directory, checking system paths.\n");
+    sharedLib = ctypes.open(ctypes.libraryName("nss3"));
+  }
 
   NSS.types = new Object();
 

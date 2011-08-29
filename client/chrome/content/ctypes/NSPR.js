@@ -27,8 +27,16 @@ function NSPR() {
 
 NSPR.initialize = function(nsprPath) {
  
-  var sharedLib = ctypes.open(nsprPath);
-  NSPR.types     = new Object();
+  var sharedLib;
+
+  try {
+    sharedLib = ctypes.open(nsprPath);    
+  } catch (e) {
+    dump("Failed to find nspr4 in installed directory, checking system paths.\n");
+    sharedLib = ctypes.open(ctypes.libraryName("nspr4"));
+  }
+
+  NSPR.types = new Object();
 
   NSPR.types.PRSocketOptionData = ctypes.StructType("PRSocketOptionData",
 						   [{'option' : ctypes.int},

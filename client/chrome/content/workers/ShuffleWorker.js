@@ -44,24 +44,29 @@ function ShuffleWorker() {
 }
 
 ShuffleWorker.prototype.initializeDescriptors = function() {
-  var pollfds_t = ctypes.ArrayType(NSPR.types.PRPollDesc);
-  var pollfds   = new pollfds_t(this.connections.length + 2);
+  var descriptors       = new Object();
+  var connectionsLength = this.connections.length;
+  var pollfds_t         = ctypes.ArrayType(NSPR.types.PRPollDesc);
+  var pollfds           = new pollfds_t(connectionsLength + 2);
 
-  for (var i in this.connections) {
+  for (var i=0;i<connectionsLength;i++) {
     pollfds[i].fd        = this.connections[i];
     pollfds[i].in_flags  = NSPR.lib.PR_POLL_READ | NSPR.lib.PR_POLL_EXCEPT | NSPR.lib.PR_POLL_ERR;
     pollfds[i].out_flags = 0;
   }
 
-  pollfds[this.connections.length].fd        = this.wakeup;
-  pollfds[this.connections.length].in_flags  = NSPR.lib.PR_POLL_READ;
-  pollfds[this.connections.length].out_flags = 0;
+  pollfds[connectionsLength].fd        = this.wakeup;
+  pollfds[connectionsLength].in_flags  = NSPR.lib.PR_POLL_READ;
+  pollfds[connectionsLength].out_flags = 0;
 
-  pollfds[this.connections.length + 1].fd        = this.serverSocket.fd;
-  pollfds[this.connections.length + 1].in_flags  = NSPR.lib.PR_POLL_READ;
-  pollfds[this.connections.length + 1].out_flags = 0;
+  pollfds[connectionsLength + 1].fd        = this.serverSocket.fd;
+  pollfds[connectionsLength + 1].in_flags  = NSPR.lib.PR_POLL_READ;
+  pollfds[connectionsLength + 1].out_flags = 0;
 
-  return pollfds;
+  descriptors.pollfds           = pollfds;
+  descriptors.connectionsLength = connectionsLength;
+
+  return descriptors;
 };
 
 ShuffleWorker.prototype.initialize = function(data) {
@@ -88,7 +93,8 @@ ShuffleWorker.prototype.addConnection = function(data) {
 
 ShuffleWorker.prototype.shuffleIfReady = function(flags, fromIndex, toIndex) {
   if ((flags & NSPR.lib.PR_POLL_READ) > 0) {
-    var read = NSPR.lib.PR_Read(this.connections[fromIndex], this.buffer, 4096);
+    // dump("Shuffling from: "  + fromIndex + " to " + toIndex + "\n");
+    var read = NSPR.lib.PR_Read(this.connections[fromIndex], this.buffer, 4095);
     
     if (read == -1) {
       if (NSPR.lib.PR_GetError() == NSPR.lib.PR_WOULD_BLOCK_ERROR) {
@@ -98,8 +104,12 @@ ShuffleWorker.prototype.shuffleIfReady = function(flags, fromIndex, toIndex) {
 	return false;
       }
     } else if (read == 0) {
+      dump("ShuffleWorker: EOF!!!!\n");
       return false;
     }
+
+    this.buffer[read] = 0x00;
+    // dump("ShuffleWorker: " + this.buffer.readString() + "\n");
     
     NSPR.lib.PR_Write(this.connections[toIndex], this.buffer, read);
   }
@@ -119,7 +129,6 @@ ShuffleWorker.prototype.removeSocketPair = function(clientIndex, serverIndex) {
   NSPR.lib.PR_Close(this.connections[serverIndex]);
 
   this.connections.splice(clientIndex, 2);
-  return this.initializeDescriptors();
 };
 
 ShuffleWorker.prototype.isWakeupEvent = function(flags) {
@@ -141,44 +150,48 @@ ShuffleWorker.prototype.handleAcceptEvent = function() {
 };
 
 ShuffleWorker.prototype.processConnections = function() {
-  var pollfds     = this.initializeDescriptors();
-  var changeCount = 0;
+  var descriptors       = this.initializeDescriptors();
+  var pollfds           = descriptors.pollfds;
+  var connectionsLength = descriptors.connectionsLength;
 
   while (NSPR.lib.PR_Poll(pollfds, pollfds.length, -1) != -1) {
+    var modified = false;
 
-      if (this.isWakeupEvent(pollfds[this.connections.length].out_flags)) {
-	dump("Bailing out for wakeup...\n");
-	return;
-      }
+    if (this.isWakeupEvent(pollfds[connectionsLength].out_flags)) {
+      dump("Bailing out for wakeup...\n");
+      return;
+    }
 
-      if (this.isAcceptEvent(pollfds[this.connections.length + 1].out_flags)) {
-	dump("Handling accept event...\n");
-	this.handleAcceptEvent();	
-      }
+    if (this.isAcceptEvent(pollfds[connectionsLength + 1].out_flags)) {
+      dump("Handling accept event...\n");
+      this.handleAcceptEvent();	
+    }
 
-      var i;
+    // dump("ConnectionsLength: " + connectionsLength + "\n");
 
-      for (i=0;i<this.connections.length;i+=2) {
-	if (this.isSocketClosed(pollfds[i].out_flags) ||
-	    this.isSocketClosed(pollfds[i+1].out_flags)) 
-	{
-	  dump("Detected socket closed...\n");
-	  pollfds = this.removeSocketPair(i, i+1);
-	  continue;
-	}
-
-	if (!this.shuffleIfReady(pollfds[i].out_flags, i, i+1)) {
-	  pollfds = this.removeSocketPair(i, i+1);
-	  continue;
-	}
-
-	if (!this.shuffleIfReady(pollfds[i+1].out_flags, i+1, i)) {
-	  pollfds = this.removeSocketPair(i, i+1);
-	  continue;
-	}
+    for (var i=connectionsLength-2;i>=0;i-=2) {
+      // dump("Checking pair: " + i + " , " + (i+1) + "\n");
+      if (this.isSocketClosed(pollfds[i].out_flags) ||
+	  this.isSocketClosed(pollfds[i+1].out_flags)) 
+      {
+	dump("Detected socket closed...\n");
+	this.removeSocketPair(i, i+1);
+	modified = true;
+      } else if (!this.shuffleIfReady(pollfds[i].out_flags, i, i+1)) {
+	this.removeSocketPair(i, i+1);
+	modified = true;
+      } else if (!this.shuffleIfReady(pollfds[i+1].out_flags, i+1, i)) {
+	this.removeSocketPair(i, i+1);
+	modified = true;
       }
     }
     
+    if (modified) {
+      descriptors       = this.initializeDescriptors();
+      pollfds           = descriptors.pollfds;
+      connectionsLength = descriptors.connectionsLength;
+    }
+  }
 };
 
 var shuffleWorker = new ShuffleWorker();

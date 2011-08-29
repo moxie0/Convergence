@@ -303,7 +303,7 @@ loadScript(true, "sockets", "ConvergenceSocket.js");
 loadScript(true, "ctypes", "Serialization.js");
 loadScript(true, "ssl", "CertificateManager.js");
 loadScript(true, "ssl", "CertificateInfo.js");
-loadScript(true, "protocols", "ConnectCommandParser.js");
+loadScript(true, "protocols", "HttpProxyServer.js");
 
 loadScript(false, null, "LocalProxy.js");
 

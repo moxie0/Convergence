@@ -24,12 +24,12 @@
  **/
 
 
-function ConnectCommandParser(clientSocket) {
+function HttpProxyServer(clientSocket) {
   this.wrappedJSObject = this;
   this.clientSocket    = clientSocket;
 }
 
-ConnectCommandParser.prototype.readHttpHeaders = function() {
+HttpProxyServer.prototype.readHttpHeaders = function() {
   var headers = "";
 
   for (;;) {
@@ -47,7 +47,7 @@ ConnectCommandParser.prototype.readHttpHeaders = function() {
   }
 };
 
-ConnectCommandParser.prototype.parseDestination = function(httpHeaders) {
+HttpProxyServer.prototype.parseDestination = function(httpHeaders) {
   if (httpHeaders.indexOf("CONNECT ") != 0) {
     throw "Not a connect request!";
   }
@@ -66,7 +66,7 @@ ConnectCommandParser.prototype.parseDestination = function(httpHeaders) {
   return endpoint;
 };
 
-ConnectCommandParser.prototype.getConnectDestination = function() {
+HttpProxyServer.prototype.getConnectDestination = function() {
   dump("Reading http headers...\n");
   httpHeaders = this.readHttpHeaders();
 

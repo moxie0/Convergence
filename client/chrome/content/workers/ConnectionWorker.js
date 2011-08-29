@@ -36,7 +36,7 @@ importScripts("chrome://convergence/content/ctypes/NSPR.js",
 	      "chrome://convergence/content/ctypes/Serialization.js",
 	      "chrome://convergence/content/sockets/ConvergenceSocket.js",
 	      "chrome://convergence/content/sockets/ConvergenceDestinationSocket.js",	      
-	      "chrome://convergence/content/protocols/ConnectCommandParser.js",
+	      "chrome://convergence/content/protocols/HttpProxyServer.js",
 	      "chrome://convergence/content/protocols/ConnectResponseParser.js",
 	      "chrome://convergence/content/protocols/HttpRequestBuilder.js",
 	      "chrome://convergence/content/protocols/HttpParser.js",
@@ -86,7 +86,7 @@ onmessage = function(event) {
     var certificateManager = new CertificateManager(event.data.certificates);
     var activeNotaries     = new ActiveNotaries(event.data.settings, event.data.notaries);
     clientSocket           = new ConvergenceSocket(null, event.data.clientSocket);
-    var destination        = new ConnectCommandParser(clientSocket).getConnectDestination();
+    var destination        = new HttpProxyServer(clientSocket).getConnectDestination();
     serverSocket           = new ConvergenceDestinationSocket(destination.host, 
 							       destination.port, 
 							       event.data.proxy);

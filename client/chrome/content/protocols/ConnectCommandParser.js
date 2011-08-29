@@ -33,11 +33,15 @@ ConnectCommandParser.prototype.readHttpHeaders = function() {
   var headers = "";
 
   for (;;) {
-    var count = this.clientSocket.available();
-    var buf   = this.clientSocket.readString(count);
+    var buf = this.clientSocket.readString();
+
+    if (buf == null)
+      throw "Socket closed while reading local HTTP CONNECT request.";
 
     headers  += buf;
 
+    dump("Total headers: " + headers + "\n");
+    
     if (headers.indexOf("\r\n\r\n") != -1)
       return headers;
   }

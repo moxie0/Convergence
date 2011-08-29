@@ -84,14 +84,32 @@ ConvergenceSocket.prototype.writeBytes = function(buffer, length) {
 //   return read;
 // };
 
-ConvergenceSocket.prototype.readString = function(length) {
-  var buffer = new NSPR.lib.buffer(length);
-  var read   = NSPR.lib.PR_Read(this.fd, buffer, length);
+ConvergenceSocket.prototype.readFully = function(length) {
+  var buffer = new NSPR.lib.unsigned_buffer(length);
+  var offset = 0;
 
-  if (read != length) { // Calling code always calls available() first.
-    throw "Expected: " + length + " got: " + read;
+  while (offset < length) { 
+    var read = NSPR.lib.PR_Read(this.fd, buffer.addressOfElement(offset), length-offset);
+
+    if (read < 0)
+      return null;
+    
+    offset += read;
   }
 
+  return buffer;
+};
+
+ConvergenceSocket.prototype.readString = function() {
+  dump("Reading from FD: " + this.fd + "\n");
+  var buffer = new NSPR.lib.buffer(4096);
+  var read   = NSPR.lib.PR_Read(this.fd, buffer, 4095);
+
+  if (read <= 0) {
+    return null;
+  }
+
+  buffer[read] = 0;
   return buffer.readString();
 };
 

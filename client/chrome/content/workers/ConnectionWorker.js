@@ -50,7 +50,7 @@ importScripts("chrome://convergence/content/ctypes/NSPR.js",
 	      "chrome://convergence/content/ssl/CertificateManager.js");
 
 function sendClientResponse(clientSocket, certificateManager, certificateInfo) {
-  clientSocket.writeBytes(NSPR.lib.buffer("HTTP/1.0 200 OK\r\n\r\n"), 23);
+  clientSocket.writeBytes(NSPR.lib.buffer("HTTP/1.0 200 Connection established\r\n\r\n"), 39);
   clientSocket.negotiateSSL(certificateManager, certificateInfo);
 };
 
@@ -120,5 +120,6 @@ onmessage = function(event) {
     dump("ConnectionWorker exception : " + e + " , " + e.stack + "\n");
     if (clientSocket != null) clientSocket.close();
     if (serverSocket != null) serverSocket.close();
+    dump("ConnectionWorker moving on from exception...\n");
   }
 };

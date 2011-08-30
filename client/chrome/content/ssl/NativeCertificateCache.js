@@ -129,3 +129,69 @@ NativeCertificateCache.prototype.isCached = function(host, port, fingerprint) {
 
   return result;
 };
+
+NativeCertificateCache.prototype.fetchAll = function() {
+  var queryStatement    = "SELECT id,location,fingerprint,timestamp FROM fingerprints";
+  var preparedStatement = SQLITE.types.sqlite3_stmt.ptr(0);
+  var unused            = ctypes.char.ptr(0);
+
+  var status = SQLITE.lib.sqlite3_prepare_v2(this.connection, SQLITE.lib.buffer(queryStatement),
+                                             -1, preparedStatement.address(), unused.address());
+
+  if (status != SQLITE.lib.SQLITE_OK) {
+    throw "Unable to create prepared statement: " + status;
+  }
+
+  var result = new Array();
+  while (SQLITE.lib.sqlite3_step(preparedStatement) == SQLITE.lib.SQLITE_ROW) {
+    result.push({
+      id: SQLITE.lib.sqlite3_column_int64(preparedStatement, 0),
+      location: SQLITE.lib.sqlite3_column_text(preparedStatement, 1).readString(),
+      fingerprint: SQLITE.lib.sqlite3_column_text(preparedStatement, 2).readString(),
+      timestamp: new Date(SQLITE.lib.sqlite3_column_int64(preparedStatement, 3)),
+    });
+  }
+
+  SQLITE.lib.sqlite3_finalize(preparedStatement);
+
+  return result;
+}
+
+NativeCertificateCache.prototype.deleteCertificate = function(id) {
+  var queryStatement    = "DELETE FROM fingerprints WHERE id = ?";
+  var preparedStatement = SQLITE.types.sqlite3_stmt.ptr(0);
+  var unused            = ctypes.char.ptr(0);
+
+  var status = SQLITE.lib.sqlite3_prepare_v2(this.connection, SQLITE.lib.buffer(queryStatement),
+                                             -1, preparedStatement.address(), unused.address());
+
+  if (status != SQLITE.lib.SQLITE_OK) {
+    throw "Unable to create prepared statement: " + status;
+  }
+
+  status = SQLITE.lib.sqlite3_bind_int64(preparedStatement, 1, id);
+
+  if (status != SQLITE.lib.SQLITE_OK) {
+    throw "Unable to bind id param: " + status;
+  }
+
+  SQLITE.lib.sqlite3_step(preparedStatement);
+  SQLITE.lib.sqlite3_finalize(preparedStatement);
+}
+
+NativeCertificateCache.prototype.clearCache = function() {
+  var queryStatement    = "DELETE FROM fingerprints";
+  var preparedStatement = SQLITE.types.sqlite3_stmt.ptr(0);
+  var unused            = ctypes.char.ptr(0);
+
+  var status = SQLITE.lib.sqlite3_prepare_v2(this.connection, SQLITE.lib.buffer(queryStatement),
+                                             -1, preparedStatement.address(), unused.address());
+
+  if (status != SQLITE.lib.SQLITE_OK) {
+    throw "Unable to create prepared statement: " + status;
+  }
+
+  SQLITE.lib.sqlite3_step(preparedStatement);
+  SQLITE.lib.sqlite3_finalize(preparedStatement);
+}
+

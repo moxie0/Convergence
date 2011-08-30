@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<dialog buttons="accept,cancel" id="convergence-add-certificate" 
+	ondialogaccept="return onDialogOK();"
+	onload="onDialogLoad();" title="Add Certificate" 
+	width="715" height="205"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+<script src="addCertificate.js" />
+
+<vbox>
+      <hbox>
+	<label value="Add a certificate fingerprint to the cache." />
+      </hbox>
+      <separator />
+      <grid>
+      	    <columns>
+		<column/>
+		<column flex="1" />
+	    </columns>
+
+	    <rows>
+		<row align="center">
+		     <label value="Host:" flex="1" />
+		     <textbox id="host" flex="1" />
+		     <label value="Port:" flex="1" />
+		     <textbox id="port" flex="1" value="443" maxlength="5" size="4"/>
+		</row>
+                <row>
+		     <label value="Fingerprint:" />
+		     <textbox id="fingerprint" flex="1"/>
+		</row>
+            </rows>
+       </grid>
+
+<separator />
+</vbox>
+</dialog>

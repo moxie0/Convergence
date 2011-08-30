@@ -15,10 +15,10 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 
-
 var convergence;
 var settingsManager;
 var notaries;
+var cachedCerts;
 
 function getNotaryTree() {
   return document.getElementById("notaryTree");
@@ -126,10 +126,82 @@ function update() {
     getColumnProperties: function(colid,col,props){}  
   };    
 
+  var certificateCache = convergence.getNativeCertificateCache();
+  cachedCerts = certificateCache.fetchAll();
+  certificateCache.close();
+  var cacheTree = document.getElementById("cacheTree");
+  cacheTree.view = {
+    rowCount: cachedCerts.length,
+
+    getCellText : function(row, column) {
+      var cachedCert = cachedCerts[row];
+
+      if      (column.id == "cacheLocation")  return cachedCert.location;
+      else if (column.id == "cacheFingerprint") return cachedCert.fingerprint;
+      else if (column.id == "cacheTimestamp")  return formatDate(cachedCert.timestamp);
+    },
+
+    setTree: function(treebox){this.treebox = treebox; },
+    isContainer: function(row){return false;},
+    isSeparator: function(row){ return false; },
+    isSorted: function(){ return false; },
+    isEditable: function(row, column) {
+      if (column.id == "notaryEnabled") return true;
+      else                              return false;
+    },
+    getLevel: function(row){ return 0; },
+    getImageSrc: function(row,col){ return null; },
+    getRowProperties: function(row,props){},
+    getCellProperties: function(row,col,props){},
+    getColumnProperties: function(colid,col,props){}
+  };
 }
 
 function issuePreferencesChangedNotification() {  
   // convergence.update();
 }
 
+function onRemoveCertificate() {
+  var tree = document.getElementById("cacheTree");
+  var id = cachedCerts[tree.currentIndex].id;
+  var certificateCache = convergence.getNativeCertificateCache();
+  certificateCache.deleteCertificate(id);
+  certificateCache.close();
+  update();
+}
+
+function onClearCache() {
+  var certificateCache = convergence.getNativeCertificateCache();
+  certificateCache.clearCache();
+  certificateCache.close();
+  update();
+}
+
+function onAddCertificate() {
+  var retVal = {fingerprint: null};
+  window.openDialog("chrome://convergence/content/addCertificate.xul", "dialog2", "modal", retVal).focus();
+
+  if (retVal.fingerprint) {
+    var certificateCache = convergence.getNativeCertificateCache();
+    certificateCache.cacheFingerprint(retVal.fingerprint.host, retVal.fingerprint.port, retVal.fingerprint.fingerprint);
+    certificateCache.close();
+    update();
+  }
+}
+
+function formatDate(date) {
+  var year = date.getFullYear();
+  var month = date.getMonth()+1;
+  var dom = date.getDate();
+  var hour = date.getHours();
+  var min = date.getMinutes();
+  var sec = date.getSeconds();
+
+  if (month < 10) month = "0" + month;
+  if (dom < 10) dom = "0" + dom;
+  if (hour < 10) hour = "0" + hour;
+  if (min < 10) min = "0" + min;
+  if (sec < 10) sec = "0" + sec;
+  return year + "-" + month + "-" + dom + " " + hour + ":" + min + ":" + sec;
+}
 

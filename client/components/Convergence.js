@@ -246,6 +246,11 @@ Convergence.prototype = {
   getHelperForLanguage: function getHelperForLanguage(aLanguage) {
     return null;
   },
+
+  getNativeCertificateCache: function() {
+    return new NativeCertificateCache(this.cacheFile.path, this.settingsManager.getCacheCertificates());
+  },
+
 };
 
 var components = [Convergence];

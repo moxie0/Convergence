@@ -31,8 +31,13 @@ SQLITE.initialize = function(sqlitePath) {
   try {
     sharedLib = ctypes.open(sqlitePath);    
   } catch (e) {
-    dump("Failed to find mozsqlite3 in installed directory, checking system paths for sqlite3.\n");
-    sharedLib = ctypes.open(ctypes.libraryName("sqlite3"));
+    try {
+      dump("Failed to find mozsqlite3 in installed directory, checking system paths for sqlite3.\n");
+      sharedLib = ctypes.open(ctypes.libraryName("sqlite3"));      
+    } catch (e) {
+      dump("Failed to find standard sqlite3 permutations, checking debian-specific libsqlite3.so.0.\n");
+      sharedLib = ctypes.open("libsqlite3.so.0");
+    }
   }
 
   var sharedLib = ctypes.open(sqlitePath);

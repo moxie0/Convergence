@@ -5,7 +5,7 @@
 
   <Description about="urn:mozilla:install-manifest">
     <em:id>convergence@extension.thoughtcrime.org</em:id>
-    <em:version>0.01</em:version>
+    <em:version>0.03</em:version>
     <em:type>2</em:type>
     <em:optionsURL>chrome://convergence/content/options.xul</em:optionsURL>
     <em:unpack>true</em:unpack>
@@ -18,7 +18,7 @@
       <Description>
         <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
         <em:minVersion>4.0</em:minVersion>
-        <em:maxVersion>5.*</em:maxVersion>
+        <em:maxVersion>6.*</em:maxVersion>
       </Description>
     </em:targetApplication>
    

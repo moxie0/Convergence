@@ -40,8 +40,6 @@ SQLITE.initialize = function(sqlitePath) {
     }
   }
 
-  var sharedLib = ctypes.open(sqlitePath);
-
   SQLITE.types = new Object();
 
   SQLITE.types.sqlite3 = ctypes.StructType("sqlite3");

@@ -3,8 +3,7 @@ Installation
 
  * Install the dependencies: `$ sudo apt-get install python python-twisted-web python-m2crypto python-openssl python-json`
  * Download the notary source: `$ wget http://convergence.io/releases/server/convergence-notary-current.tar.gz`
- * Unpack the source: `$ tar zxvf convergence-notary-current.tar.gz`
- * Enter the directory: `$ cd convergence-notary-<version>`
+ * Unpack the source: `$ mkdir convergence-notary; cd convergence-notary; tar zxvf ../convergence-notary-current.tar.gz`
  * Run the install script: `$ sudo python ./setup.py install`
 
 Configuration

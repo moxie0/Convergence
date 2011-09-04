@@ -75,8 +75,8 @@ NativeCertificateCache.prototype.cacheFingerprint = function(host, port, fingerp
     throw "Unable to bind fingerprint param: " + status;
   }
 
-  var status = SQLITE.lib.sqlite3_bind_int64(preparedStatement, 3,
-					     new Date().getTime());
+  var timestamp = new ctypes.Int64(new Date().getTime());
+  var status = SQLITE.lib.sqlite3_bind_text(preparedStatement, 3, SQLITE.lib.buffer(timestamp.toString()), -1, staticData);
 
   if (status != SQLITE.lib.SQLITE_OK) {
     throw "Unable to bind timestamp param: " + status;

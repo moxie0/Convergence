@@ -49,6 +49,7 @@ function onDialogOK() {
     var convergence = Components.classes['@thoughtcrime.org/convergence;1']
       .getService().wrappedJSObject;
     notary = convergence.getNewNotary();
+    notary.setEnabled(true);
   }
 
   notary.setHost(host);

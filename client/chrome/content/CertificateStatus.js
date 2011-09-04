@@ -1,5 +1,9 @@
-function CertificateStatus() {
+Components.utils.import("resource://gre/modules/ctypes.jsm");
 
+function CertificateStatus(convergenceManager) {
+  dump("CertificateStatus constructor called : " + convergenceManager.nssFile.path + "\n");
+  NSS.initialize(convergenceManager.nssFile.path);
+  dump("Constructed!\n");
 }
 
 CertificateStatus.prototype.getInvalidCertificate = function(destination) {
@@ -36,39 +40,41 @@ CertificateStatus.prototype.getCertificateForCurrentTab = function() {
   }
 };
 
-CertificateStatus.prototype.parseStatus = function(status) {
-  var notaries = status.split("*");
-  var results  = new Array();
+CertificateStatus.prototype.getVerificationStatus = function(certificate) {
+  var len                 = {};
+  var derEncoding         = certificate.getRawDER(len);
 
-  for (var i in notaries) {
-    if (notaries[i].length == 0)
-      continue;
+  var derItem             = NSS.types.SECItem();
+  derItem.data            = NSS.lib.ubuffer(derEncoding);
+  derItem.len             = len.value;
 
-    var notaryResponse = notaries[i].split(":");
-    var notary         = notaryResponse[0];
-    var status;
+  var completeCertificate = NSS.lib.CERT_DecodeDERCertificate(derItem.address(), 1, null);
 
-    if (notaryResponse[1] < 0)
-      status = "Connectivity Failure.";
-    else if (notaryResponse[1] == 0)
-      status = "Verification Failure.";
-    else if (notaryResponse[1] == 1)
-      status = "Verification Success.";
-    else if (notaryResponse[1] == 3)
-      status = "Anonymization Relay.";
+  var extItem = NSS.types.SECItem();
+  var status  = NSS.lib.CERT_FindCertExtension(completeCertificate, 
+					       NSS.lib.SEC_OID_NS_CERT_EXT_COMMENT, 
+					       extItem.address());
 
-    results.push({'notary' : notary, 'status' : status});
+  if (status != -1) {
+    var encoded = '';
+    var asArray = ctypes.cast(extItem.data, ctypes.ArrayType(ctypes.unsigned_char, extItem.len).ptr).contents;
+
+    for (var i=3;i<asArray.length;i++) {
+      encoded += String.fromCharCode(asArray[i]);
+    }
+
+    dump("Parsed encoded details: " + encoded + "\n");
+    return JSON.parse(encoded);
   }
-
-  return results;
 };
 
 CertificateStatus.prototype.getCurrentTabStatus = function() {
   dump("Getting current tab status...\n");
   var certificate = this.getCertificateForCurrentTab();  
 
-  if (certificate != null)
-    return this.parseStatus(certificate.organizationalUnit);
+  if (certificate != null) {
+    return this.getVerificationStatus(certificate);
+  }
 
   return null;
 };

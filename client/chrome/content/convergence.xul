@@ -4,6 +4,7 @@
 
  <script src="convergence.js"/> 
  <script src="CertificateStatus.js"/>
+ <script src="ctypes/NSS.js" />
 
  <toolbarpalette id="BrowserToolbarPalette">
    <toolbarbutton id="convergence-button" class="toolbarbutton-1"

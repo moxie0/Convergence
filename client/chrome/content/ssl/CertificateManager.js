@@ -98,23 +98,23 @@ CertificateManager.prototype.generateCaCertificate = function(privateKey, public
   return this.generateCertificate(privateKey, publicKey,
 				  "CN=Convergence Local CA,OU=Convergence,O=Convergence,C=US",
 				  "CN=Convergence Local CA,OU=Convergence,O=Convergence,C=US", 
-				  true, null);
+				  true, null, null);
 };
 
 CertificateManager.prototype.generatePeerCertificate = function(certificateInfo) {
   var commonName  = certificateInfo.commonName.readString();
-  var orgUnitName = certificateInfo.orgUnitName.readString();
 
   if (commonName.indexOf(",") != -1) 
     commonName = '"' + commonName + '"';
 
   var certificateName = 
-  "CN=" + commonName + ",OU=" + orgUnitName + ",O=Convergence,C=US";
+  "CN=" + commonName + ",OU=Convergence,O=Convergence,C=US";
 
   var certificate = this.generateCertificate(this.peerKeys.privateKey, this.peerKeys.publicKey,
   					     certificateName, 
   					     "CN=Convergence Local CA,OU=Convergence,O=Convergence,C=US",
-  					     false, certificateInfo.altNames);
+  					     false, certificateInfo.altNames, 
+					     certificateInfo.verificationDetails);
 
   this.signCertificate(certificate);
 
@@ -162,7 +162,24 @@ CertificateManager.prototype.addExtensions = function(certificate) {
   keyUsageItem.len  = 1;
 
   var status = NSS.lib.CERT_EncodeAndAddBitStrExtension(extensionHandle, NSS.lib.SEC_OID_X509_KEY_USAGE, keyUsageItem.address(), 1);
+
   var status = NSS.lib.CERT_FinishExtensions(extensionHandle);
+};
+
+CertificateManager.prototype.addVerificationDetails = function(certificate, verificationDetails) {
+  var extensionHandle = NSS.lib.CERT_StartCertExtensions(certificate);
+  var commentItem     = NSS.types.SECItem();
+  var comment         = NSPR.lib.unsigned_buffer(verificationDetails);
+  
+  commentItem.data    = comment;
+  commentItem.len     = verificationDetails.length;
+
+  var status = NSS.lib.CERT_EncodeAndAddBitStrExtension(extensionHandle, 
+							NSS.lib.SEC_OID_NS_CERT_EXT_COMMENT, 
+							commentItem.address(), 0);
+  NSS.lib.CERT_FinishExtensions(extensionHandle);
+
+  dump("COMMENT v3 extension result: " + status + "\n");
 };
 
 CertificateManager.prototype.addAltNames = function(certificate, altNames) {
@@ -176,7 +193,9 @@ CertificateManager.prototype.addAltNames = function(certificate, altNames) {
   NSS.lib.PORT_FreeArena(arena, 0);
 };
 
-CertificateManager.prototype.generateCertificate = function(privateKey, publicKey, subject, issuer, isCa, altNames) {
+CertificateManager.prototype.generateCertificate = function(privateKey, publicKey, subject, issuer, isCa, 
+							    altNames, verificationDetails) 
+{
   var subjectName        = NSS.lib.CERT_AsciiToName(subject);
 
   if (subjectName == null || subjectName.isNull()) {
@@ -215,6 +234,10 @@ CertificateManager.prototype.generateCertificate = function(privateKey, publicKe
 
   if (altNames != null && !altNames.isNull()) {
     this.addAltNames(certificate, altNames);
+  }
+
+  if (verificationDetails != null) {
+    this.addVerificationDetails(certificate, verificationDetails);
   }
 
   return certificate;

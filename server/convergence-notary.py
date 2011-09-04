@@ -50,7 +50,7 @@ from twisted.internet import reactor
 
 import sys, string, os, getopt, logging, pwd, grp, convergence.daemonize
 
-gVersion = "0.01"
+gVersion = "0.2"
 
 class ServerContextFactory:
 

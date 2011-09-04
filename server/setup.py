@@ -6,6 +6,13 @@ shutil.copyfile("convergence-gencert.py", "convergence/convergence-gencert")
 shutil.copyfile("convergence-createdb.py", "convergence/convergence-createdb")
 shutil.copyfile("convergence-bundle.py", "convergence/convergence-bundle")
 
+REQUIRES = ['twisted.web', 
+            'twisted.enterprise', 
+            'twisted.internet', 
+            'OpenSSL', 
+            'sqlite3'
+           ]
+
 setup  (name         = 'convergence-notary',
         version      = '0.2',
         description  = 'An agile, distributed, and secure alternative to the Certificate Authority system.',
@@ -19,6 +26,7 @@ setup  (name         = 'convergence-notary',
                         'convergence/convergence-gencert',
                         'convergence/convergence-createdb',
                         'convergence/convergence-bundle'],
+        install_requires = REQUIRES,
         data_files   = [('share/convergence', ['README', 'INSTALL', 'COPYING']),
                       ('/etc/init.d', ['init-script/convergence'])]
        )

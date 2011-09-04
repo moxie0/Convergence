@@ -51,6 +51,8 @@ NICE=""
 
 test -x $DAEMON || exit 0
 
+test -f /etc/default/$NAME && . /etc/default/$NAME
+
 wait_for_deaddaemon () {
 	pid=$1
 	sleep 1

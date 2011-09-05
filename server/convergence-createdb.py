@@ -48,7 +48,7 @@ import sys, os.path, os, getopt, pwd, grp
 def main(argv):    
     uname             = "nobody"
     gname             = "nogroup"
-
+    
     try:
         opts, args = getopt.getopt(argv, "u:g:h")
         
@@ -60,7 +60,7 @@ def main(argv):
             elif opt in ("-h"):
                 usage()
                 sys.exit()
-
+    
     convergencePath = "/var/lib/convergence/"
     convergencedb   = convergencePath + "convergence.db"
 
@@ -70,7 +70,7 @@ def main(argv):
     
     connection = connect(convergencedb)
     cursor     = connection.cursor()
-
+    
     cursor.execute("CREATE TABLE fingerprints (id integer primary key, location TEXT, fingerprint TEXT, timestamp_start INTEGER, timestamp_finish INTEGER)")
     connection.commit()
     cursor.close()
@@ -100,6 +100,5 @@ def usage():
     print "-h             Print this help message."
     print ""
 
-    
 if __name__ == '__main__':
     main(sys.argv[1:])

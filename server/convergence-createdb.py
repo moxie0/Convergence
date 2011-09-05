@@ -61,7 +61,7 @@ def main(argv):
                 usage()
                 sys.exit()
     
-        except getopt.GetoptError:
+    except getopt.GetoptError:
         usage()
         sys.exit(2)
     

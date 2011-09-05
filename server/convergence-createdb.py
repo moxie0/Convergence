@@ -61,9 +61,13 @@ def main(argv):
                 usage()
                 sys.exit()
     
+        except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+    
     convergencePath = "/var/lib/convergence/"
     convergencedb   = convergencePath + "convergence.db"
-
+    
     if not os.path.exists(convergencePath):
         os.makedirs(convergencePath)
         

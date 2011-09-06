@@ -147,8 +147,7 @@ CertificateManager.prototype.createValidity = function() {
   return NSS.lib.CERT_CreateValidity(now, then);
 };
 
-CertificateManager.prototype.addExtensions = function(certificate) {
-  var extensionHandle = NSS.lib.CERT_StartCertExtensions(certificate);
+CertificateManager.prototype.addCaExtensions = function(certificate, extensionHandle) {
   var basicConstraint = NSS.types.CERTBasicConstraints({'isCA' : 1, 'pathLenConstraint' : 3});
   var encodedValue    = NSS.types.SECItem();
 
@@ -162,12 +161,9 @@ CertificateManager.prototype.addExtensions = function(certificate) {
   keyUsageItem.len  = 1;
 
   var status = NSS.lib.CERT_EncodeAndAddBitStrExtension(extensionHandle, NSS.lib.SEC_OID_X509_KEY_USAGE, keyUsageItem.address(), 1);
-
-  var status = NSS.lib.CERT_FinishExtensions(extensionHandle);
 };
 
-CertificateManager.prototype.addVerificationDetails = function(certificate, verificationDetails) {
-  var extensionHandle = NSS.lib.CERT_StartCertExtensions(certificate);
+CertificateManager.prototype.addVerificationDetails = function(certificate, extensionHandle, verificationDetails) {
   var commentItem     = NSS.types.SECItem();
   var comment         = NSPR.lib.unsigned_buffer(verificationDetails);
   
@@ -177,19 +173,16 @@ CertificateManager.prototype.addVerificationDetails = function(certificate, veri
   var status = NSS.lib.CERT_EncodeAndAddBitStrExtension(extensionHandle, 
 							NSS.lib.SEC_OID_NS_CERT_EXT_COMMENT, 
 							commentItem.address(), 0);
-  NSS.lib.CERT_FinishExtensions(extensionHandle);
 
   dump("COMMENT v3 extension result: " + status + "\n");
 };
 
-CertificateManager.prototype.addAltNames = function(certificate, altNames) {
-  var extensionHandle = NSS.lib.CERT_StartCertExtensions(certificate);
+CertificateManager.prototype.addAltNames = function(certificate, extensionHandle, altNames) {
   var arena           = NSS.lib.PORT_NewArena(2048);
   var secItem         = NSS.types.SECItem();
   
   NSS.lib.CERT_EncodeAltNameExtension(arena, altNames, secItem.address());
   NSS.lib.CERT_AddExtension(extensionHandle, 83, secItem.address(), 0, 1);
-  NSS.lib.CERT_FinishExtensions(extensionHandle);
   NSS.lib.PORT_FreeArena(arena, 0);
 };
 
@@ -228,17 +221,21 @@ CertificateManager.prototype.generateCertificate = function(privateKey, publicKe
     throw "Could not construct certificate!";
   }
 
+  var extensionHandle = NSS.lib.CERT_StartCertExtensions(certificate);
+
   if (isCa) {
-    this.addExtensions(certificate);
+    this.addCaExtensions(certificate, extensionHandle);
   }
 
   if (altNames != null && !altNames.isNull()) {
-    this.addAltNames(certificate, altNames);
+    this.addAltNames(certificate, extensionHandle, altNames);
   }
 
   if (verificationDetails != null) {
-    this.addVerificationDetails(certificate, verificationDetails);
+    this.addVerificationDetails(certificate, extensionHandle, verificationDetails);
   }
+
+  NSS.lib.CERT_FinishExtensions(extensionHandle);
 
   return certificate;
 };

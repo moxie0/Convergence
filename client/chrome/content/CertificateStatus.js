@@ -58,9 +58,14 @@ CertificateStatus.prototype.getVerificationStatus = function(certificate) {
   if (status != -1) {
     var encoded = '';
     var asArray = ctypes.cast(extItem.data, ctypes.ArrayType(ctypes.unsigned_char, extItem.len).ptr).contents;
+    var marker  = false;
 
-    for (var i=3;i<asArray.length;i++) {
-      encoded += String.fromCharCode(asArray[i]);
+    for (var i=0;i<asArray.length;i++) {
+      if (marker) {
+	encoded += String.fromCharCode(asArray[i]);
+      } else if (asArray[i] == 0x00) {
+	marker = true;
+      }
     }
 
     dump("Parsed encoded details: " + encoded + "\n");

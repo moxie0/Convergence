@@ -1,5 +1,10 @@
 content     convergence    chrome/content/
-overlay chrome://browser/content/browser.xul chrome://convergence/content/convergence.xul
+
+#Firefox only
+overlay chrome://browser/content/browser.xul chrome://convergence/content/convergence.xul application={ec8030f7-c20a-464f-9b0e-13a3a9e97384}
+#Seamonkey uses a different layout...
+overlay chrome://navigator/content/navigator.xul chrome://convergence/content/convergence.xul application={92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}
+
 style chrome://browser/content/convergence.xul chrome://convergence/style/toolbar.css
 
 category content-policy ConvergenceContentPolicy @thoughtcrime.org/convergence-contentpolicy;1

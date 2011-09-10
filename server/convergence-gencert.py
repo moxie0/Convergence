@@ -27,8 +27,8 @@ import os, tempfile, sys, getopt
 
 
 def parseOptions(argv):
-    certFile   = "/etc/ssl/certs/convergence.pem"
-    keyFile    = "/etc/ssl/private/convergence.key"
+    certFile   = "mynotary.pem"
+    keyFile    = "mynotary.key"
     subject    = None
 
     try:
@@ -55,8 +55,8 @@ def parseOptions(argv):
 def usage():
     print "usage: bundle <options>\n"
     print "Options:"
-    print "-c <cert>  SSL cert (default: /etc/ssl/certs/convergence.pem)."
-    print "-k <key>   SSL key (default: /etc/ssl/private/convergence.key)."
+    print "-c <cert>  SSL cert (default: mynotary.pem)."
+    print "-k <key>   SSL key (default: mynotary.key)."
     print "-s <subj>  SSL subject (default: interactive)."
     print "-h         Print this help message."
     print ""

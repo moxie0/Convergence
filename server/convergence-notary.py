@@ -44,6 +44,7 @@ event_reactor.install()
 from convergence.TargetPage import TargetPage
 from convergence.ConnectChannel import ConnectChannel
 from convergence.ConnectRequest import ConnectRequest
+from convergence.verifier.NetworkPerspectiveVerifier import NetworkPerspectiveVerifier
 
 from OpenSSL import SSL
 from twisted.enterprise import adbapi
@@ -80,6 +81,7 @@ def parseOptions(argv):
     keyFile           = "/etc/ssl/private/convergence.key"
     uname             = "nobody"
     gname             = "nogroup"
+    verifier          = NetworkPerspectiveVerifier();
     background        = True
 
     try:
@@ -109,7 +111,7 @@ def parseOptions(argv):
                 sys.exit()
         
         return (logLevel, sslPort, httpPort, certFile, keyFile,
-                uname, gname, background, incomingInterface)
+                uname, gname, background, incomingInterface, verifier)
 
     except getopt.GetoptError:
         usage()
@@ -176,9 +178,9 @@ def initializeLogging(logLevel):
 
     logging.info("Convergence Notary started...")
 
-def initializeFactory(database, privateKey):
+def initializeFactory(database, privateKey, verifier):
     root = Resource()
-    root.putChild("target", TargetPage(database, privateKey))
+    root.putChild("target", TargetPage(database, privateKey, verifier))
 
     return Site(root)    
 
@@ -192,12 +194,12 @@ def main(argv):
     (logLevel, sslPort, httpPort,
      certFile, keyFile, userName,
      groupName, background,
-     incomingInterface)     = parseOptions(argv)
-    privateKey              = initializeKey(keyFile)
-    database                = initializeDatabase()
-    sslFactory              = initializeFactory(database, privateKey)
-    connectFactory          = http.HTTPFactory(timeout=10)
-    connectFactory.protocol = ConnectChannel
+     incomingInterface, verifier) = parseOptions(argv)
+    privateKey                    = initializeKey(keyFile)
+    database                      = initializeDatabase()
+    sslFactory                    = initializeFactory(database, privateKey, verifier)
+    connectFactory                = http.HTTPFactory(timeout=10)
+    connectFactory.protocol       = ConnectChannel
     
     reactor.listenSSL(sslPort, sslFactory, ServerContextFactory(certFile, keyFile),
                       interface=incomingInterface)

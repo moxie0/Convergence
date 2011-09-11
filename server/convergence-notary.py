@@ -23,6 +23,11 @@ USA
 
 """
 
+import sys
+if sys.version_info < (2, 6):
+    print "Sorry, convergence requires at least Python 2.6"
+    sys.exit(3)
+
 # BSD and Mac OS X, kqueue
 try:
     from twisted.internet import kqreactor as event_reactor
@@ -39,7 +44,6 @@ event_reactor.install()
 from convergence.TargetPage import TargetPage
 from convergence.ConnectChannel import ConnectChannel
 from convergence.ConnectRequest import ConnectRequest
-
 
 from OpenSSL import SSL
 from twisted.enterprise import adbapi

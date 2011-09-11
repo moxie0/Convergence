@@ -64,9 +64,10 @@ class ServerContextFactory:
         self.key          = key
 
     def getContext(self):
-        ctx = SSL.Context(SSL.SSLv3_METHOD)
+        ctx = SSL.Context(SSL.SSLv23_METHOD)
         ctx.use_certificate_chain_file(self.cert)
         ctx.use_privatekey_file(self.key)
+        ctx.set_options(SSL.OP_NO_SSLv2)
 
         return ctx
 

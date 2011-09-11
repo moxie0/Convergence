@@ -23,7 +23,44 @@ USA
 
 """
 
-import os, tempfile, sys
+import os, tempfile, sys, getopt
+
+
+def parseOptions(argv):
+    certFile   = "mynotary.pem"
+    keyFile    = "mynotary.key"
+    subject    = None
+
+    try:
+        opts, args = getopt.getopt(argv, "c:k:s:h")
+
+        for opt, arg in opts:
+            if opt in ("-c"):
+                certFile = arg
+            elif opt in ("-k"):
+                keyFile = arg
+            elif opt in ("-s"):
+                subject = arg
+            elif opt in ("-h"):
+                usage()
+                sys.exit()
+
+        return (certFile, keyFile, subject)
+
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+
+
+def usage():
+    print "usage: bundle <options>\n"
+    print "Options:"
+    print "-c <cert>  SSL cert (default: mynotary.pem)."
+    print "-k <key>   SSL key (default: mynotary.key)."
+    print "-s <subj>  SSL subject (default: interactive)."
+    print "-h         Print this help message."
+    print ""
+
 
 def existsInPath(command):
     def isExe(fpath):
@@ -36,21 +73,31 @@ def existsInPath(command):
 
     return None
 
+
 def main(argv):
     openssl = existsInPath("openssl")
-    
+
     if openssl is None:
         print "You must install OpenSSL first!"
         os._exit(1)
 
+    (certFile, keyFile, subject) = parseOptions(argv)
+
     csrFd, csrPath = tempfile.mkstemp(dir='.')
 
-    os.system(openssl + " genrsa -out mynotary.key 2048")
-    os.system(openssl + " req -new -key mynotary.key -out " + csrPath)
-    os.system(openssl + " x509 -req -days 14600 -in " + csrPath + " -signkey mynotary.key -out mynotary.pem")
+    cmd = [openssl, "genrsa", "-out", keyFile, "2048"]
+    os.system(" ".join(cmd))
+    cmd = [openssl, "req", "-new", "-key", keyFile, "-out", csrPath]
+    if subject is not None:
+        cmd.extend(["-subj", "\'" + subject + "\'"])
+    os.system(" ".join(cmd))
+    cmd = [openssl, "x509", "-req", "-days", "14600", "-in", csrPath,
+           "-signkey", keyFile, "-out", certFile]
+    os.system(" ".join(cmd))
+
     os.remove(csrPath)
 
-    print "Certificate and key generated in mynotary.pem and mynotary.key"
+    print "Certificate and key generated in " + certFile + " and " + keyFile
 
 if __name__ == '__main__':
     main(sys.argv[1:])

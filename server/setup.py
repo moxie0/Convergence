@@ -34,5 +34,5 @@ if cmd in ['install', 'clean']:
     except:
         pass
 
-if cmd in ['install', 'clean']:
+if cmd in ['install', 'clean'] and os.path.exists('build'):
     shutil.rmtree('build')

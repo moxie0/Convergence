@@ -1,0 +1,16 @@
+
+Installation
+============
+
+Install dependencies. On Debian/Ubuntu:
+
+   sudo apt-get install python python-twisted-web python-m2crypto python-openssl python-json
+
+Build the server:
+
+   python setup.py build
+
+Install globally:
+
+   sudo puython setup.py install
+

@@ -44,6 +44,12 @@ function onOptionsSave() {
   settingsManager.savePreferences();  
   issuePreferencesChangedNotification();
 
+  if (isAllNotariesDisabled()) {
+    alert("No configured notaries are enabled, disabling Convergence.");
+    convergence.setEnabled(false);
+    issueConvergenceDisabledNotification();
+  }
+
   return true;
 }
 
@@ -71,6 +77,16 @@ function onAddNotary() {
     updateNotarySettings();
   }
 }
+
+function isAllNotariesDisabled() {
+  for (var i=0;i<notaries.length;i++) {
+    if (notaries[i].getEnabled()) {
+      return false;
+    }
+  }
+
+  return true;
+};
 
 function updateAdvancedSettings() {
   var cacheCertificatesEnabled     = convergence.getSettingsManager().getCacheCertificates();
@@ -156,6 +172,12 @@ function updateNotarySettings() {
 
 function issuePreferencesChangedNotification() {  
   // convergence.update();
+}
+
+function issueConvergenceDisabledNotification() {
+  var observerService = Components.classes["@mozilla.org/observer-service;1"]
+    .getService(Components.interfaces.nsIObserverService);  
+  observerService.notifyObservers(observerService, "convergence-disabled", null);
 }
 
 function onRemoveCertificate() {

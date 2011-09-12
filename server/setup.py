@@ -21,7 +21,7 @@ setup  (name        = 'convergence-notary',
         packages  = ["convergence"],
         package_dir = {'convergence' : 'convergence/'},
         scripts = ['convergence/convergence-notary', 'convergence/convergence-gencert', 'convergence/convergence-createdb', 'convergence/convergence-bundle'],
-        data_files = [('share/convergence', ['README.md', 'INSTALL', 'COPYING']),
+        data_files = [('share/convergence', ['README', 'INSTALL', 'COPYING']),
                       ('/etc/init.d', ['init-script/convergence'])]
        )
 

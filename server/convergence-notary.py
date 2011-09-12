@@ -44,7 +44,9 @@ event_reactor.install()
 from convergence.TargetPage import TargetPage
 from convergence.ConnectChannel import ConnectChannel
 from convergence.ConnectRequest import ConnectRequest
+
 from convergence.verifier.NetworkPerspectiveVerifier import NetworkPerspectiveVerifier
+from convergence.verifier.GoogleCatalogVerifier import GoogleCatalogVerifier
 
 from OpenSSL import SSL
 from twisted.enterprise import adbapi
@@ -85,7 +87,7 @@ def parseOptions(argv):
     background        = True
 
     try:
-        opts, args = getopt.getopt(argv, "s:p:i:o:c:k:u:g:fdh")
+        opts, args = getopt.getopt(argv, "s:p:i:o:c:k:u:g:b:fdh")
 
         for opt, arg in opts:
             if opt in("-p"):
@@ -106,6 +108,8 @@ def parseOptions(argv):
                 logLevel = logging.DEBUG
             elif opt in ("-f"):
                 background = False
+            elif opt in ("-b"):
+                verifier = initializeBackend(arg)
             elif opt in ("-h"):
                 usage()
                 sys.exit()
@@ -128,11 +132,17 @@ def usage():
     print "-k <key>       SSL private key location."
     print "-u <username>  Name of user to drop privileges to (defaults to 'nobody')"
     print "-g <group>     Name of group to drop privileges to (defaults to 'nogroup')"
+    print "-b <backend>   Verifier backend [perspective|google] (defaults to 'perspective')"
     print "-f             Run in foreground."
     print "-d             Debug mode."
     print "-h             Print this help message."
     print ""
 
+def initializeBackend(backend):
+    if   (backend == "perspective"): return NetworkPerspectiveVerifier()
+    elif (backend == "google"):      return GoogleCatalogVerifier()
+    else:                            raise getopt.GetoptError("Invalid backend: " + backend)
+    
 def checkPrivileges(userName, groupName):                
     try:
         grp.getgrnam(groupName)

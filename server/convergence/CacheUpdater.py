@@ -40,7 +40,7 @@ class CacheUpdater:
         return error
 
     def handleVerifyCertificateComplete(self, (responseCode, fingerprint), host, port):
-        logging.debug("Got fingerprint: " + fingerprint)
+        logging.debug("Got fingerprint: " + str(fingerprint))
 
         if fingerprint is None:
             return (responseCode, None)

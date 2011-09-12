@@ -16,18 +16,28 @@
 # USA
 #
 
-# The base class for all verifier backends.  You get the host, port,
-# and fingerprint of the target to verify, and return a Deferred.
-
-# Callback on the Deferred with a (statusCode, fingerprintToCache) tuple,
-# indicating the status code to return to the client as well as what fingerprint
-# to cache for this target, where fingerprintToCache can be None if the cache
-# should not be updated.
-
 class Verifier:
+    """The base class for all verifier back ends."""
 
     def __init__(self):
         pass
 
     def verify(self, host, port, fingerprint):
+        """
+        Verify whether are fingerprint is valid for a given target.
+
+        This is an asynchronous call, and implementations return a Deferred
+        object.  The callback is a (responseCode, fingerprintToCache) tuple,
+        where fingerprintToCache can be None if the responseCode is 409 and
+        the implementation does not know of any valid fingerprint.
+
+        :Parameters:
+          - `host` (str) - The target's host name.
+          - `port` (int) - The target's port.
+          - `fingerpring` (str) - The fingerprint in question for this target.
+
+        :Returns Type:
+          Deferred
+
+        """
         raise NotImplementedError("Abstract method!")

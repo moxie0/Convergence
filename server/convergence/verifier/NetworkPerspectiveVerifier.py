@@ -25,10 +25,12 @@ from OpenSSL.SSL import Context, SSLv23_METHOD, TLSv1_METHOD, VERIFY_PEER, VERIF
 from Verifier import Verifier
 import logging
 
-# This class is responsible for connecting to the target
-# and checking its SSL certificate.
-
 class NetworkPerspectiveVerifier(Verifier):
+    """
+    This class is responsible for verifying a target fingerprint
+    by connecting to the same target and checking if the fingerprints
+    match across network perspective.
+    """
 
     def __init__(self):
         Verifier.__init__(self)
@@ -57,9 +59,6 @@ class CertificateFetcherClientFactory(ClientFactory):
 
     def buildProtocol(self, addr):
         return CertificateFetcherClient()
-#         p         = CertificateFetcherClient()
-#         p.factory = self
-#         return p
 
     def clientConnectionFailed(self, connector, reason):
         logging.warning("Connection to destination failed...")

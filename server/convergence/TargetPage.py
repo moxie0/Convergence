@@ -25,7 +25,6 @@ from twisted.python.log import err
 from twisted.web.server import NOT_DONE_YET
 
 from FingerprintDatabase import FingerprintDatabase
-from CertificateFetcher import CertificateFetcher
 from CacheUpdater import CacheUpdater
 from NotaryResponse import NotaryResponse
 

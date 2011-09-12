@@ -244,6 +244,11 @@ CertificateManager.prototype.generateKeyPair = function(permanent, nick) {
   var slot       = NSS.lib.PK11_GetInternalKeySlot();
   var publicKey  = NSS.types.SECKEYPublicKey.ptr(0);
   var rsaParams  = NSS.types.PK11RSAGenParams({'keySizeInBits' : 1024, 'pe' : 65537});
+  // Get nsIPK11Token for Master Password
+  var myToken = Components.classes["@mozilla.org/security/pk11tokendb;1"].getService(Components.interfaces.nsIPK11TokenDB).findTokenByName("");
+  if (! myToken.isLoggedIn()) {
+    myToken.login(true);
+  }
   var privateKey = NSS.lib.PK11_GenerateKeyPair(slot, NSS.lib.CKM_RSA_PKCS_KEY_PAIR_GEN, 
 						rsaParams.address(), 
 						publicKey.address(), 

@@ -96,6 +96,7 @@ var Convergence = {
     .getService(Components.interfaces.nsIObserverService);
 
     observerService.addObserver(this, "convergence-add-notary", false);
+    observerService.addObserver(this, "convergence-disabled", false);
   },
 
   addNotaryFromFile: function(path) {
@@ -142,13 +143,9 @@ var Convergence = {
     if (topic == "convergence-add-notary") {
       dump("Adding notary from file: " + data + "\n");
       this.addNotaryFromFile(data);
+    } else if (topic == "convergence-disabled") {
+      this.setDisabledStatus();
     }
-  },
-
-  onStatusBarClick: function(event) {
-    if (event.button != 0) return;
-    this.updateSystemStatus();
-    this.updateLocalStatus();
   },
 
   onToolBarClick: function(event) {
@@ -167,6 +164,13 @@ var Convergence = {
   },
 
   updateSystemStatus: function() {
+    if (!this.convergenceManager.isEnabled() &&
+	!this.convergenceManager.getSettingsManager().hasEnabledNotary()) 
+    {
+      alert("Unable to activate Convergence, no configured notaries are enabled.");
+      return;
+    }
+
     this.convergenceManager.setEnabled(!this.convergenceManager.isEnabled());
   },
 
@@ -175,13 +179,13 @@ var Convergence = {
   },
 
   setEnabledStatus: function() {
-    document.getElementById("convergence-menu-toggle").label    = "Disable";
-    document.getElementById("convergence-button").image         = "chrome://convergence/content/images/status-enabled.png";
+    document.getElementById("convergence-menu-toggle").label = "Disable";
+    document.getElementById("convergence-button").image      = "chrome://convergence/content/images/status-enabled.png";
   },
 
   setDisabledStatus: function() {
-    document.getElementById("convergence-menu-toggle").label    = "Enable";
-    document.getElementById("convergence-button").image         = "chrome://convergence/content/images/status-disabled.png";
+    document.getElementById("convergence-menu-toggle").label = "Enable";
+    document.getElementById("convergence-button").image      = "chrome://convergence/content/images/status-disabled.png";
   },
 
   installToolbarIcon: function() {

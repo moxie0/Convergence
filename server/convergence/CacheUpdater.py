@@ -28,41 +28,36 @@ import logging
 
 class CacheUpdater:
 
-    def __init__(self, database):
+    def __init__(self, database, verifier):
         self.database = database
+        self.verifier = verifier
 
-    def updateRecordsComplete(self, recordRows, deferred, code):
-        deferred.callback((code, recordRows))
+    def updateRecordsComplete(self, recordRows, code):
+        return (code, recordRows)
 
     def updateRecordsError(self, error, deferred):
         logging.warning("Update records error: " + str(error))
-        deferred.errback("Error updating database.")
+        return error
 
-    def handleFetchCertificateComplete(self, fingerprint, deferred,
-                                       host, port, submittedFingerprint):
-        logging.debug("Got fingerprint: " + fingerprint)
-        responseCode = None
+    def handleVerifyCertificateComplete(self, (responseCode, fingerprint), host, port):
+        logging.debug("Got fingerprint: " + str(fingerprint))
 
-        if fingerprint == submittedFingerprint:
-            responseCode = 200
+        if fingerprint is None:
+            return (responseCode, None)
         else:
-            responseCode = 409
+            deferred = self.database.updateRecordsFor(host, port, fingerprint)
+            deferred.addCallback(self.updateRecordsComplete, responseCode)
+            deferred.addErrback(self.updateRecordsError)
 
-        databaseDeferred = self.database.updateRecordsFor(host, port, fingerprint)
-        databaseDeferred.addCallback(self.updateRecordsComplete, deferred, responseCode)
-        databaseDeferred.addErrback(self.updateRecordsError, deferred)
+            return deferred
 
-    def handleFetchCertificateError(self, error, deferred):
+    def handleVerifyCertificateError(self, error):
         logging.warning("Fetch certificate error: " + str(error))
-        deferred.errback("Error fetching certificate.")
+        return error
 
     def updateCache(self, host, port, submittedFingerprint):
-        deferred = defer.Deferred()
+        deferred = self.verifier.verify(host, port, submittedFingerprint)
+        deferred.addCallback(self.handleVerifyCertificateComplete, host, port)
+        deferred.addErrback(self.handleVerifyCertificateError)
 
-        certificateFetcher = CertificateFetcher(host, port)
-        fetcherDeferred    = certificateFetcher.fetchCertificate()
-        fetcherDeferred.addCallback(self.handleFetchCertificateComplete,
-                                    deferred, host, port, submittedFingerprint)
-        fetcherDeferred.addErrback(self.handleFetchCertificateError, deferred)
-
-        return deferred
+        return deferred        

@@ -83,6 +83,16 @@ SettingsManager.prototype.setNotaryList = function(notaries) {
   this.notaries = notaries.slice(0);
 };
 
+SettingsManager.prototype.hasEnabledNotary = function() {
+  for (var i=0;i<this.notaries.length;i++) {
+    if (this.notaries[i].getEnabled()) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 SettingsManager.prototype.getSerializedNotaryList = function() {
   var serialized = new Array();
   

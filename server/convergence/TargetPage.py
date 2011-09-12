@@ -25,7 +25,6 @@ from twisted.python.log import err
 from twisted.web.server import NOT_DONE_YET
 
 from FingerprintDatabase import FingerprintDatabase
-from CertificateFetcher import CertificateFetcher
 from CacheUpdater import CacheUpdater
 from NotaryResponse import NotaryResponse
 
@@ -38,9 +37,9 @@ class TargetPage(Resource):
 
     isLeaf = True
 
-    def __init__(self, databaseConnection, privateKey):
+    def __init__(self, databaseConnection, privateKey, verifier):
         self.database     = FingerprintDatabase(databaseConnection)
-        self.cacheUpdater = CacheUpdater(self.database)
+        self.cacheUpdater = CacheUpdater(self.database, verifier)
         self.privateKey   = privateKey
 
     def cacheUpdateComplete(self, (code, recordRows), request):
@@ -48,7 +47,7 @@ class TargetPage(Resource):
 
     def cacheUpdateError(self, error, request):
         logging.warning("Cache update error: " + str(error))
-        self.sendErrorResponse(request, 503, "Error")
+        self.sendErrorResponse(request, 503, "Internal Error")
 
     def handleCacheMiss(self, request, host, port, submittedFingerprint):
         logging.debug("Handling cache miss...")

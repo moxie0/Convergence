@@ -16,21 +16,38 @@
 # USA
 #
 
-
 from twisted.internet import reactor, defer
 from twisted.internet import ssl, reactor
 from twisted.internet.protocol import ClientFactory, Protocol
 from twisted.internet.ssl import ContextFactory
 
 from OpenSSL.SSL import Context, SSLv23_METHOD, TLSv1_METHOD, VERIFY_PEER, VERIFY_FAIL_IF_NO_PEER_CERT, OP_NO_SSLv2
+from Verifier import Verifier
 import logging
 
-# This class is responsible for connecting to the target
-# and returning its SSL certificate.
+class NetworkPerspectiveVerifier(Verifier):
+    """
+    This class is responsible for verifying a target fingerprint
+    by connecting to the same target and checking if the fingerprints
+    match across network perspective.
+    """
 
+    def __init__(self):
+        Verifier.__init__(self)
+
+    def verify(self, host, port, fingerprint):
+        deferred       = defer.Deferred()
+        factory        = CertificateFetcherClientFactory(deferred)
+        contextFactory = CertificateContextFactory(deferred, fingerprint)
+
+        logging.debug("Fetching certificate from: " + host + ":" + str(port))
+        
+        reactor.connectSSL(host, int(port), factory, contextFactory)
+        return deferred
+        
 class CertificateFetcherClient(Protocol):
-    def __init__(self, deferred):
-        self.deferred = deferred
+    def __init__(self):
+        pass
         
     def connectionMade(self):
         logging.debug("Connection made...")
@@ -41,26 +58,25 @@ class CertificateFetcherClientFactory(ClientFactory):
         self.deferred = deferred
 
     def buildProtocol(self, addr):
-         p         = CertificateFetcherClient(self.deferred)
-         p.factory = self
-         return p
+        return CertificateFetcherClient()
 
     def clientConnectionFailed(self, connector, reason):
         logging.warning("Connection to destination failed...")
-        self.deferred.errback("Connection failed")
+        self.deferred.errback(Exception("Connection failed"))
     
     def clientConnectionLost(self, connector, reason):
         logging.debug("Connection lost...")
         
         if not self.deferred.called:
             logging.warning("Lost before verification callback...")
-            self.deferred.errback("Connection lost")
+            self.deferred.errback(Exception("Connection lost"))
 
 class CertificateContextFactory(ContextFactory):
     isClient = True
 
-    def __init__(self, deferred):
-        self.deferred = deferred
+    def __init__(self, deferred, fingerprint):
+        self.deferred    = deferred
+        self.fingerprint = fingerprint
     
     def getContext(self):
         ctx = Context(SSLv23_METHOD)
@@ -74,22 +90,11 @@ class CertificateContextFactory(ContextFactory):
         if depth != 0:
             return True
 
-        self.deferred.callback(x509.digest("sha1"))
+        fingerprintSeen = x509.digest("sha1")
+
+        if fingerprintSeen == self.fingerprint:
+            self.deferred.callback((200, fingerprintSeen))
+        else:
+            self.deferred.callback((409, fingerprintSeen))
+
         return False
-    
-class CertificateFetcher:
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-
-    def fetchCertificate(self):
-        deferred       = defer.Deferred()
-        factory        = CertificateFetcherClientFactory(deferred)
-        contextFactory = CertificateContextFactory(deferred)
-
-        logging.debug("Fetching certificate from: " + self.host + ":" + str(self.port))
-        
-        reactor.connectSSL(self.host, int(self.port), factory, contextFactory)
-        return deferred
-        
-

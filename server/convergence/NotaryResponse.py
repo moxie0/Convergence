@@ -45,12 +45,13 @@ class NotaryResponse:
 
         fingerprintList = []
 
-        for row in recordRows:
-            timestamp   = {'start' : str(row[1]), 'finish' : str(row[2])}
-            fingerprint = {'fingerprint' : str(row[0]),
-                           'timestamp' : timestamp }
+        if recordRows is not None:
+            for row in recordRows:
+                timestamp   = {'start' : str(row[1]), 'finish' : str(row[2])}
+                fingerprint = {'fingerprint' : str(row[0]),
+                               'timestamp' : timestamp }
 
-            fingerprintList.append(fingerprint)
+                fingerprintList.append(fingerprint)
 
         result = {'fingerprintList' : fingerprintList}
 

@@ -32,8 +32,13 @@ NSPR.initialize = function(nsprPath) {
   try {
     sharedLib = ctypes.open(nsprPath);    
   } catch (e) {
-    dump("Failed to find nspr4 in installed directory, checking system paths.\n");
-    sharedLib = ctypes.open(ctypes.libraryName("nspr4"));
+    try {
+      dump("Failed to find nspr4 in installed directory, checking system paths.\n");
+      sharedLib = ctypes.open(ctypes.libraryName("nspr4"));      
+    } catch (e) {
+      dump("Failed to find nspr4 in system paths, trying explicit FreeBSD path.\n");
+      sharedLib = ctypes.open("/usr/local/lib/libnspr4.so");
+    }
   }
 
   NSPR.types = new Object();

@@ -101,6 +101,12 @@ SQLITE.initialize = function(sqlitePath) {
 					    SQLITE.types.sqlite3_stmt.ptr,
 					    ctypes.int),
 
+    sqlite3_column_int64 : sharedLib.declare("sqlite3_column_int64",
+					    ctypes.default_abi,
+					    ctypes.int64_t,
+					    SQLITE.types.sqlite3_stmt.ptr,
+					    ctypes.int),
+
     sqlite3_finalize : sharedLib.declare("sqlite3_finalize",
 					 ctypes.default_abi,
 					 ctypes.int,

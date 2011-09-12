@@ -23,6 +23,11 @@ USA
 
 """
 
+import sys
+if sys.version_info < (2, 6):
+    print "Sorry, convergence requires at least Python 2.6"
+    sys.exit(3)
+
 # BSD and Mac OS X, kqueue
 try:
     from twisted.internet import kqreactor as event_reactor
@@ -40,6 +45,8 @@ from convergence.TargetPage import TargetPage
 from convergence.ConnectChannel import ConnectChannel
 from convergence.ConnectRequest import ConnectRequest
 
+from convergence.verifier.NetworkPerspectiveVerifier import NetworkPerspectiveVerifier
+from convergence.verifier.GoogleCatalogVerifier import GoogleCatalogVerifier
 
 from OpenSSL import SSL
 from twisted.enterprise import adbapi
@@ -60,9 +67,10 @@ class ServerContextFactory:
         self.key          = key
 
     def getContext(self):
-        ctx = SSL.Context(SSL.SSLv3_METHOD)
+        ctx = SSL.Context(SSL.SSLv23_METHOD)
         ctx.use_certificate_chain_file(self.cert)
         ctx.use_privatekey_file(self.key)
+        ctx.set_options(SSL.OP_NO_SSLv2)
 
         return ctx
 
@@ -75,10 +83,11 @@ def parseOptions(argv):
     keyFile           = "/etc/ssl/private/convergence.key"
     uname             = "nobody"
     gname             = "nogroup"
+    verifier          = NetworkPerspectiveVerifier();
     background        = True
 
     try:
-        opts, args = getopt.getopt(argv, "s:p:i:o:c:k:u:g:fdh")
+        opts, args = getopt.getopt(argv, "s:p:i:o:c:k:u:g:b:fdh")
 
         for opt, arg in opts:
             if opt in("-p"):
@@ -99,12 +108,14 @@ def parseOptions(argv):
                 logLevel = logging.DEBUG
             elif opt in ("-f"):
                 background = False
+            elif opt in ("-b"):
+                verifier = initializeBackend(arg)
             elif opt in ("-h"):
                 usage()
                 sys.exit()
         
         return (logLevel, sslPort, httpPort, certFile, keyFile,
-                uname, gname, background, incomingInterface)
+                uname, gname, background, incomingInterface, verifier)
 
     except getopt.GetoptError:
         usage()
@@ -121,11 +132,17 @@ def usage():
     print "-k <key>       SSL private key location."
     print "-u <username>  Name of user to drop privileges to (defaults to 'nobody')"
     print "-g <group>     Name of group to drop privileges to (defaults to 'nogroup')"
+    print "-b <backend>   Verifier backend [perspective|google] (defaults to 'perspective')"
     print "-f             Run in foreground."
     print "-d             Debug mode."
     print "-h             Print this help message."
     print ""
 
+def initializeBackend(backend):
+    if   (backend == "perspective"): return NetworkPerspectiveVerifier()
+    elif (backend == "google"):      return GoogleCatalogVerifier()
+    else:                            raise getopt.GetoptError("Invalid backend: " + backend)
+    
 def checkPrivileges(userName, groupName):                
     try:
         grp.getgrnam(groupName)
@@ -171,9 +188,9 @@ def initializeLogging(logLevel):
 
     logging.info("Convergence Notary started...")
 
-def initializeFactory(database, privateKey):
+def initializeFactory(database, privateKey, verifier):
     root = Resource()
-    root.putChild("target", TargetPage(database, privateKey))
+    root.putChild("target", TargetPage(database, privateKey, verifier))
 
     return Site(root)    
 
@@ -187,12 +204,12 @@ def main(argv):
     (logLevel, sslPort, httpPort,
      certFile, keyFile, userName,
      groupName, background,
-     incomingInterface)     = parseOptions(argv)
-    privateKey              = initializeKey(keyFile)
-    database                = initializeDatabase()
-    sslFactory              = initializeFactory(database, privateKey)
-    connectFactory          = http.HTTPFactory(timeout=10)
-    connectFactory.protocol = ConnectChannel
+     incomingInterface, verifier) = parseOptions(argv)
+    privateKey                    = initializeKey(keyFile)
+    database                      = initializeDatabase()
+    sslFactory                    = initializeFactory(database, privateKey, verifier)
+    connectFactory                = http.HTTPFactory(timeout=10)
+    connectFactory.protocol       = ConnectChannel
     
     reactor.listenSSL(sslPort, sslFactory, ServerContextFactory(certFile, keyFile),
                       interface=incomingInterface)

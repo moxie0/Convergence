@@ -1,0 +1,6 @@
+# Default settings for convergence-notary. This file is sourced by /bin/sh from
+# /etc/init.d/convergence.
+
+# command-line arguments to pass to convergence-notary
+# see 'convergence-notary --help' for a list of options
+#ARGS="-p 80 -s 443 -c /etc/ssl/certs/convergence.pem -k /etc/ssl/private/convergence.key"

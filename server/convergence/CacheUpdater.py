@@ -16,9 +16,6 @@
 # USA
 #
 
-from twisted.internet import defer
-
-from CertificateFetcher import CertificateFetcher
 import logging
 
 # This class is responsible for updating the notary's certificate

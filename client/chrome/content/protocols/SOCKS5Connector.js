@@ -33,8 +33,10 @@ SOCKS5Connector.prototype.sendClientHello = function(proxySocket) {
 SOCKS5Connector.prototype.readServerHello = function(proxySocket) {
   var serverHello = proxySocket.readFully(2);
 
-  if (serverHello[1] == 0xFF)
+  if (serverHello[1] == 0xFF) {
+    proxySocket.close();
     throw "Server requires authentication, which we don't support!";
+  }
 };
 
 SOCKS5Connector.prototype.sendConnectRequest = function(proxySocket, host, port) {
@@ -54,8 +56,10 @@ SOCKS5Connector.prototype.readConnectResponse = function(proxySocket, host) {
 
   dump("Got response: " + response[1] + "\n");
 
-  if (response[1] != 0x00)
+  if (response[1] != 0x00) {
+    proxySocket.close();
     throw "SOCKS Proxy denied connection request (" + response[1] + ")!";
+  }
 
   if (response[3] == 0x01) {
     proxySocket.readFully(6);
@@ -66,6 +70,7 @@ SOCKS5Connector.prototype.readConnectResponse = function(proxySocket, host) {
     domainLength     = ctypes.cast(domainLength[0], ctypes.int32_t);
     proxySocket.readFully(domainLength+2);
   } else {
+    proxySocket.close();
     throw "Unknown address type in socks connect response.";
   }
 };

@@ -92,7 +92,7 @@ ActiveNotaries.prototype.checkHostValidity = function(host, port, certificate) {
 
   if (bounceNotary != null)
     verdictDetail.push({'notary' : bounceNotary.host, 
-	                'status' : 3});
+	                'status' : 2});
 
   for (var i in checkNotaries) {
     dump("Checking checknotary: " + i + "\n");
@@ -100,9 +100,9 @@ ActiveNotaries.prototype.checkHostValidity = function(host, port, certificate) {
     var notaryResponse = checkNotaries[i].checkValidity(host, port, certificate, bounceNotary, 
 							this.isConnectivityErrorFailure());
 
-    if (notaryResponse > 0) {
+    if (notaryResponse == 0) {
       successCount++;
-    } else if (notaryResponse < 0) {
+    } else if (notaryResponse > 0) {
       checkedNotaryCount--;
     }
 

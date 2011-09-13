@@ -57,13 +57,14 @@ var Convergence = {
   },
 
   stringifyResponseCode: function(responseCode) {
-    if (responseCode < 0) 
-      return "Connectivity Failure";
-
     switch (responseCode) {
-    case 0: return "Verification Failure.";
-    case 1: return "Verification Success.";
-    case 3: return "Anonymization Relay.";
+
+    case -2: return "Connectivity Failure.";
+    case -1: return "Verification Failure.";
+    case 0: return "Verification Success.";
+    case 1: return "Verification Inconclusive.";
+    case 2: return "Anonymization Relay.";
+    case 3: return "Connectivity Failure.";
     }
 
     return "Unknown";

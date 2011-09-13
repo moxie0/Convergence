@@ -124,12 +124,12 @@ Notary.prototype.checkFingerprintList = function(response, certificate) {
     dump("Checking fingerprint: "  + fingerprintList[i].fingerprint + " == " + certificate.sha1 + "\n");
     if (fingerprintList[i].fingerprint == certificate.sha1) {
       dump("Returning success...\n");
-      return 1;
+      return 0;
     }
   }
 
   dump("Nothing matched!\n");
-  return 0;
+  return -1;
 };
 
 Notary.prototype.checkValidity = function(host, port, certificate, proxy, connectivityIsFailure) {
@@ -141,8 +141,8 @@ Notary.prototype.checkValidity = function(host, port, certificate, proxy, connec
     if (notarySocket == null) {
       dump("Failed to construct socket to notary...\n");
 
-      if (connectivityIsFailure) return 0;
-      else                       return -1;
+      if (connectivityIsFailure) return -2;
+      else                       return 3;
     }
 
     this.sendRequest(notarySocket, host, port, certificate);
@@ -152,23 +152,23 @@ Notary.prototype.checkValidity = function(host, port, certificate, proxy, connec
     switch (response.getResponseCode()) {
     case 303: 
       dump("Notary response was inconclusive...\n");
-      return -1;
+      return 1;
     case 409: 
       dump("Notary failed to find matching fingerprint!\n");
-      return 0;
+      return -1;
     case 200:
       dump("Notary indicates match, checking...\n");
       return this.checkFingerprintList(response.getResponseBodyJson(), 
 				       certificate);
     default:
       dump("Got error notary response code: " + response.getResponseCode() + "\n");
-      if (connectivityIsFailure) return 0;
-      else                       return -1;      
+      if (connectivityIsFailure) return -2;
+      else                       return 3;      
     }
   } catch (e) {
     dump(e + " , " + e.stack);
-    if (connectivityIsFailure) return 0;
-    else                       return -1;
+    if (connectivityIsFailure) return -2;
+    else                       return 3;
   } finally {
     if (notarySocket != null) {
       notarySocket.close();

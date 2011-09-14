@@ -58,7 +58,7 @@ function checkCertificateValidity(certificateCache, activeNotaries, host, port, 
   dump("Checking certificate cache: " + certificateInfo.sha1 + "\n");
 
   if (certificateCache.isCached(host, port, certificateInfo.sha1)) 
-    return {'status' : true, 'details' : [{'notary' : 'Certificate Cache', 'status' : 1}]};
+    return {'status' : true, 'details' : [{'notary' : 'Certificate Cache', 'status' : 0}]};
 
   dump("Not cached, checking notaries: " + certificateInfo.sha1 + "\n");
   var results = activeNotaries.checkValidity(host, port, certificateInfo);

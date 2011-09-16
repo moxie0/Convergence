@@ -101,8 +101,12 @@ function updateAdvancedSettings() {
 };
 
 function updateCacheSettings() {
+  this.updateCacheSettings("cacheLocation", "ascending");
+}
+
+function updateCacheSettings(id, sortDirection) {
   var certificateCache = convergence.getNativeCertificateCache();
-  cachedCerts          = certificateCache.fetchAll();
+  cachedCerts          = certificateCache.fetchAll(id, sortDirection);
   certificateCache.close();
 
   var cacheTree = document.getElementById("cacheTree");
@@ -127,7 +131,8 @@ function updateCacheSettings() {
     getImageSrc: function(row,col){ return null; },
     getRowProperties: function(row,props){},
     getCellProperties: function(row,col,props){},
-    getColumnProperties: function(colid,col,props){}
+    getColumnProperties: function(colid,col,props){},
+    cycleHeader: function(col){}
   };
 };
 
@@ -226,3 +231,7 @@ function formatDate(date) {
   return year + "-" + month + "-" + dom + " " + hour + ":" + min + ":" + sec;
 }
 
+function sortCacheTree(column) {
+  dump("DEBUG: " + column.getAttribute("id") + " " + column.getAttribute("sortDirection") + "\n");
+  this.updateCacheSettings(column.getAttribute("id"), column.getAttribute("sortDirection"));
+}

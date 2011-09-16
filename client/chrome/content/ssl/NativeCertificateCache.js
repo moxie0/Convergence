@@ -137,7 +137,6 @@ NativeCertificateCache.prototype.isCached = function(host, port, fingerprint) {
 };
 
 NativeCertificateCache.prototype.fetchAll = function(id, sortDirection) {
-  dump("DEBUG: " + id + " | " + sortDirection + "\n");
   var queryStatement    = "SELECT id,location,fingerprint,timestamp FROM fingerprints";
   var orderBy = "false";
   if(id != null) {
@@ -168,7 +167,6 @@ NativeCertificateCache.prototype.fetchAll = function(id, sortDirection) {
       }
     }
   }
-  dump("DEBUG: " + queryStatement + "\n");
   var preparedStatement = SQLITE.types.sqlite3_stmt.ptr(0);
   var unused            = ctypes.char.ptr(0);
 

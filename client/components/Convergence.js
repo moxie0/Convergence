@@ -223,12 +223,18 @@ Convergence.prototype = {
 
     return false;
   },
+
+  isWhitelisted: function(uri) {
+    return uri.host == "localhost" ||
+           uri.host == "127.0.0.1" ||
+           uri.host == "aus3.mozilla.org";    
+  },
   
   applyFilter : function(protocolService, uri, proxy) {
     if (!this.enabled)
       return proxy;
 
-    if ((uri.scheme == "https") && (!this.isNotaryUri(uri))) {
+    if ((uri.scheme == "https") && (!this.isNotaryUri(uri)) && (!this.isWhitelisted(uri))) {
       this.connectionManager.setProxyTunnel(proxy);
 
       return this.localProxy.getProxyInfo();

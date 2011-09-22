@@ -147,6 +147,21 @@ Convergence.prototype = {
       dump("SQL exception: " + e + "\n");
     }
 
+    try {
+      database.executeSimpleSQL("DELETE FROM fingerprints "    +
+              "WHERE id NOT IN (SELECT MAX(id) FROM fingerprints "    +
+              "GROUP BY location)");
+    } catch (e) {
+      dump("SQL exception: " + e + "\n");
+    }
+
+    try {
+      database.executeSimpleSQL("CREATE UNIQUE INDEX target_fingerprint "    +
+              "ON fingerprints(location, fingerprint)");
+    } catch (e) {
+      dump("SQL exception: " + e + "\n");
+    }
+
     database.close();
   },
 

@@ -26,6 +26,7 @@ Components.utils.import("resource://gre/modules/NetUtil.jsm");
 
 var Convergence = {
 
+  certificateStatus: null,
   convergenceManager: null,
   results: null,
 
@@ -49,20 +50,33 @@ var Convergence = {
     var tip = "";
       
     for (var i in status) {      
-      tip += (status[i].notary + " : " + status[i].status + "\n");
+      tip += (status[i].notary + " : " + this.stringifyResponseCode(status[i].status) + "\n");
     }
 
     panel.tooltipText = tip;
   },
 
+  stringifyResponseCode: function(responseCode) {
+    if (responseCode < 0) 
+      return "Connectivity Failure";
+
+    switch (responseCode) {
+    case 0: return "Verification Failure.";
+    case 1: return "Verification Success.";
+    case 3: return "Anonymization Relay.";
+    }
+
+    return "Unknown";
+  },
+
   initializeTabWatcher: function() {
-    var container   = gBrowser.tabContainer;
-    var convergence = this;
+    var container         = gBrowser.tabContainer;
+    var convergence       = this;
 
     container.addEventListener("TabSelect", function(event) {
 	dump("On tab selected..\n");
 	try {
-	  var status = new CertificateStatus().getCurrentTabStatus();	  
+	  var status = convergence.certificateStatus.getCurrentTabStatus();	  
 	  dump("Got status: " + status + "\n");
 	  convergence.setToolTip(status);
 	} catch (e) {
@@ -74,6 +88,7 @@ var Convergence = {
   initializeConvergenceManager: function() {
     this.convergenceManager = Components.classes['@thoughtcrime.org/convergence;1']
     .getService().wrappedJSObject;
+    this.certificateStatus  = new CertificateStatus(this.convergenceManager);
   },
 
   initializeObserver: function() {
@@ -81,6 +96,7 @@ var Convergence = {
     .getService(Components.interfaces.nsIObserverService);
 
     observerService.addObserver(this, "convergence-add-notary", false);
+    observerService.addObserver(this, "convergence-disabled", false);
   },
 
   addNotaryFromFile: function(path) {
@@ -127,13 +143,9 @@ var Convergence = {
     if (topic == "convergence-add-notary") {
       dump("Adding notary from file: " + data + "\n");
       this.addNotaryFromFile(data);
+    } else if (topic == "convergence-disabled") {
+      this.setDisabledStatus();
     }
-  },
-
-  onStatusBarClick: function(event) {
-    if (event.button != 0) return;
-    this.updateSystemStatus();
-    this.updateLocalStatus();
   },
 
   onToolBarClick: function(event) {
@@ -147,11 +159,18 @@ var Convergence = {
   },
 
   onContentLoad: function(event) {
-    var status = new CertificateStatus().getCurrentTabStatus();	  
+    var status = this.certificateStatus.getCurrentTabStatus();	  
     this.setToolTip(status);    
   },
 
   updateSystemStatus: function() {
+    if (!this.convergenceManager.isEnabled() &&
+	!this.convergenceManager.getSettingsManager().hasEnabledNotary()) 
+    {
+      alert("Unable to activate Convergence, no configured notaries are enabled.");
+      return;
+    }
+
     this.convergenceManager.setEnabled(!this.convergenceManager.isEnabled());
   },
 
@@ -160,13 +179,13 @@ var Convergence = {
   },
 
   setEnabledStatus: function() {
-    document.getElementById("convergence-menu-toggle").label    = "Disable";
-    document.getElementById("convergence-button").image         = "chrome://convergence/content/images/status-enabled.png";
+    document.getElementById("convergence-menu-toggle").label = "Disable";
+    document.getElementById("convergence-button").image      = "chrome://convergence/content/images/status-enabled.png";
   },
 
   setDisabledStatus: function() {
-    document.getElementById("convergence-menu-toggle").label    = "Enable";
-    document.getElementById("convergence-button").image         = "chrome://convergence/content/images/status-disabled.png";
+    document.getElementById("convergence-menu-toggle").label = "Enable";
+    document.getElementById("convergence-button").image      = "chrome://convergence/content/images/status-disabled.png";
   },
 
   installToolbarIcon: function() {

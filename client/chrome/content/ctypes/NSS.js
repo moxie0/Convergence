@@ -181,6 +181,7 @@ NSS.initialize = function(nssPath) {
     SEC_OID_MD5 : 3,
     SEC_OID_SHA1 : 4,
     SEC_OID_X509_KEY_USAGE : 81,
+    SEC_OID_NS_CERT_EXT_COMMENT : 75,
     CKM_RSA_PKCS_KEY_PAIR_GEN : 0,
     buffer : ctypes.ArrayType(ctypes.char),
     ubuffer : ctypes.ArrayType(ctypes.unsigned_char),
@@ -414,7 +415,20 @@ NSS.initialize = function(nssPath) {
     						 NSS.types.CERTGeneralName.ptr,
     						 NSS.types.CERTCertificate.ptr,
     						 NSS.types.PLArenaPool.ptr),
-					   
+
+    CERT_DecodeDERCertificate : sharedLib.declare("__CERT_DecodeDERCertificate",
+                                                  ctypes.default_abi,
+                                                  NSS.types.CERTCertificate.ptr,
+                                                  NSS.types.SECItem.ptr,
+                                                  ctypes.int,
+                                                  ctypes.char.ptr),
+
+    CERT_FindCertExtension : sharedLib.declare("CERT_FindCertExtension",
+					       ctypes.default_abi,
+					       ctypes.int,
+					       NSS.types.CERTCertificate.ptr,
+					       ctypes.int,
+					       NSS.types.SECItem.ptr),
   };
 
 };

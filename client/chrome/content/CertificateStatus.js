@@ -1,5 +1,31 @@
-function CertificateStatus() {
+// Copyright (c) 2011 Moxie Marlinspike <moxie@thoughtcrime.org>
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 3 of the
+// License, or (at your option) any later version.
 
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+// USA
+
+Components.utils.import("resource://gre/modules/ctypes.jsm");
+
+/**
+ * This class pulls out the notary vote results for the currently
+ * rendered page.
+ *
+ **/
+
+function CertificateStatus(convergenceManager) {
+  dump("CertificateStatus constructor called : " + convergenceManager.nssFile.path + "\n");
+  NSS.initialize(convergenceManager.nssFile.path);
+  dump("Constructed!\n");
 }
 
 CertificateStatus.prototype.getInvalidCertificate = function(destination) {
@@ -36,39 +62,46 @@ CertificateStatus.prototype.getCertificateForCurrentTab = function() {
   }
 };
 
-CertificateStatus.prototype.parseStatus = function(status) {
-  var notaries = status.split("*");
-  var results  = new Array();
+CertificateStatus.prototype.getVerificationStatus = function(certificate) {
+  var len                 = {};
+  var derEncoding         = certificate.getRawDER(len);
 
-  for (var i in notaries) {
-    if (notaries[i].length == 0)
-      continue;
+  var derItem             = NSS.types.SECItem();
+  derItem.data            = NSS.lib.ubuffer(derEncoding);
+  derItem.len             = len.value;
 
-    var notaryResponse = notaries[i].split(":");
-    var notary         = notaryResponse[0];
-    var status;
+  var completeCertificate = NSS.lib.CERT_DecodeDERCertificate(derItem.address(), 1, null);
 
-    if (notaryResponse[1] < 0)
-      status = "Connectivity Failure.";
-    else if (notaryResponse[1] == 0)
-      status = "Verification Failure.";
-    else if (notaryResponse[1] == 1)
-      status = "Verification Success.";
-    else if (notaryResponse[1] == 3)
-      status = "Anonymization Relay.";
+  var extItem = NSS.types.SECItem();
+  var status  = NSS.lib.CERT_FindCertExtension(completeCertificate, 
+					       NSS.lib.SEC_OID_NS_CERT_EXT_COMMENT, 
+					       extItem.address());
 
-    results.push({'notary' : notary, 'status' : status});
+  if (status != -1) {
+    var encoded = '';
+    var asArray = ctypes.cast(extItem.data, ctypes.ArrayType(ctypes.unsigned_char, extItem.len).ptr).contents;
+    var marker  = false;
+
+    for (var i=0;i<asArray.length;i++) {
+      if (marker) {
+	encoded += String.fromCharCode(asArray[i]);
+      } else if (asArray[i] == 0x00) {
+	marker = true;
+      }
+    }
+
+    dump("Parsed encoded details: " + encoded + "\n");
+    return JSON.parse(encoded);
   }
-
-  return results;
 };
 
 CertificateStatus.prototype.getCurrentTabStatus = function() {
   dump("Getting current tab status...\n");
   var certificate = this.getCertificateForCurrentTab();  
 
-  if (certificate != null)
-    return this.parseStatus(certificate.organizationalUnit);
+  if (certificate != null) {
+    return this.getVerificationStatus(certificate);
+  }
 
   return null;
 };

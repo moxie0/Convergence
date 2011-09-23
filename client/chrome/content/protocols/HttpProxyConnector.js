@@ -38,7 +38,8 @@ HttpProxyConnector.prototype.makeConnection = function(proxySocket, host, port) 
   var headers = new ConnectResponseParser(proxySocket);
   
   if (headers.getResponseCode() != 200) {
-      throw "Proxy connect failed! " + headers.getResponseCode();
+    proxySocket.close();
+    throw "Proxy connect failed! " + headers.getResponseCode();
   }
 
   return proxySocket;

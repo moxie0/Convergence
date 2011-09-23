@@ -9,6 +9,7 @@
   <tabs>
     <tab label="Notaries"/>
     <tab label="Advanced"/>
+    <tab label="Cache Manager"/>
   </tabs>
   <tabpanels flex="1">
     <tabpanel id="settingsTab" flex="1">
@@ -52,6 +53,29 @@
 	  </radiogroup>
 	</groupbox>
 	</vbox>
+    </tabpanel>
+    <tabpanel id="cacheTab">
+      <vbox flex="1">
+	<hbox flex="1">
+	  <tree id="cacheTree" align="stretch" flex="1" editable="true">
+	    <treecols>
+	      <treecol id="cacheLocation" label="Host:Port             " flex="1" editable="false" />
+	      <splitter class="tree-splitter" />
+	      <treecol id="cacheTimestamp" label="Timestamp          " flex="1" editable="false"/>
+	      <splitter class="tree-splitter" />
+	      <treecol id="cacheFingerprint" label="Fingerprint" flex="1" editable="false" />
+	    </treecols>
+	    <treechildren />  
+	  </tree>
+
+	  <separator />
+	  <vbox flex="0">
+	    <button id="add-certificate-button" pack="start" label="Add Certificate" onclick="onAddCertificate();" />
+	    <button id="remove-certificate-button" pack="start" label="Remove Certificate" onclick="onRemoveCertificate();" />
+	    <button id="clear-cache-button" pack="start" label="Clear Cache" onclick="onClearCache();"/>
+	  </vbox>
+	</hbox>
+      </vbox>
     </tabpanel>
   </tabpanels>
 </tabbox>

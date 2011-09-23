@@ -133,8 +133,10 @@ Notary.prototype.checkFingerprintList = function(response, certificate) {
 };
 
 Notary.prototype.checkValidity = function(host, port, certificate, proxy, connectivityIsFailure) {
+  var notarySocket = null;
+
   try {
-    var notarySocket = this.makeSSLConnection(proxy);
+    notarySocket = this.makeSSLConnection(proxy);
 
     if (notarySocket == null) {
       dump("Failed to construct socket to notary...\n");
@@ -167,6 +169,10 @@ Notary.prototype.checkValidity = function(host, port, certificate, proxy, connec
     dump(e + " , " + e.stack);
     if (connectivityIsFailure) return 0;
     else                       return -1;
+  } finally {
+    if (notarySocket != null) {
+      notarySocket.close();
+    }
   }
 };
 

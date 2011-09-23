@@ -24,7 +24,49 @@ USA
 
 """
 
-import sys
+import sys, getopt
+
+def parseOptions(argv):
+    httpPort   = 80
+    sslPort    = 443
+    notaryName = "notary.example.com"
+    certFile   = "/etc/ssl/certs/convergence.pem"
+    outputFile = "mynotarybundle.notary"
+
+    try:
+        opts, args = getopt.getopt(argv, "p:s:n:c:o:h")
+
+        for opt, arg in opts:
+            if opt in("-p"):
+                httpPort = int(arg)
+            elif opt in ("-s"):
+                sslPort = int(arg)
+            elif opt in ("-n"):
+                notaryName = arg
+            elif opt in ("-c"):
+                certFile = arg
+            elif opt in ("-o"):
+                outputFile = arg
+            elif opt in ("-h"):
+                usage()
+                sys.exit()
+
+        return (httpPort, sslPort, notaryName, certFile, outputFile)
+
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+
+def usage():
+    print "usage: bundle <options>\n"
+    print "Options:"
+    print "-p <http_port> HTTP port your notary is listening on (default: 80)."
+    print "-s <ssl_port>  SSL port your notary is listening on (default: 443)."
+    print "-n <hostname>  Notary hostname (default: notary.thoughtcrime.org)."
+    print "-c <cert>      SSL cert (default: /etc/ssl/certs/convergence.pem)."
+    print "-o <outfile>   Notary bundle file (default: mynotarybundle.notary)."
+    print "-h             Print this help message."
+    print ""
 
 def loadCertificate(path):
     fd       = open(path, "r")
@@ -34,22 +76,20 @@ def loadCertificate(path):
     return contents
 
 def main(argv):
-    host            = raw_input("Notary hostname (eg: 'notary.thoughtcrime.org'): ")
-    sslPort         = raw_input("Notary SSL listen port (eg: 443): ")
-    httpPort        = raw_input("Notary HTTP listen port (eg: 80): ")
-    certificatePath = raw_input("Path to PEM encoded certificate: ")
+    (httpPort, sslPort, notaryName,
+     certFile, outputFile) = parseOptions(argv)
 
-    certificate     = loadCertificate(certificatePath)
+    certificate     = loadCertificate(certFile)
 
-    bundle = open("mynotarybundle.notary", "w")
+    bundle = open(outputFile, "w")
     bundle.write('{\n'\
-                 '"host" : "' + host + '",\n'\
-                 '"ssl_port" : ' + sslPort + ',\n'\
-                 '"http_port" : ' + httpPort + ',\n'\
+                 '"host" : "' + notaryName + '",\n'\
+                 '"ssl_port" : ' + str(sslPort) + ',\n'\
+                 '"http_port" : ' + str(httpPort) + ',\n'\
                  '"certificate" : "' + certificate + '"\n}')
     bundle.close()
 
-    print "Bundle generated in mynotarybundle.notary"
+    print "Bundle generated in %s" % outputFile
 
 if __name__ == '__main__':
     main(sys.argv[1:])

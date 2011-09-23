@@ -24,7 +24,8 @@ shutil.copyfile("convergence-bundle.py", "convergence/convergence-bundle")
 
 REQUIRES = ['twisted.web', 
             'twisted.enterprise', 
-            'twisted.internet', 
+            'twisted.internet',
+            'twisted.names',
             'OpenSSL', 
             'sqlite3'
            ]

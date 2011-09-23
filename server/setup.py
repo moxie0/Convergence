@@ -17,8 +17,7 @@ setup  (name        = 'convergence-notary',
         package_dir = {'convergence' : 'convergence/'},
         scripts = ['convergence/convergence-notary', 'convergence/convergence-gencert', 'convergence/convergence-createdb', 'convergence/convergence-bundle'],
         data_files = [('share/convergence', ['README', 'INSTALL', 'COPYING']),
-                      ('/etc/init.d', ['init-script/convergence']),
-                      ('/etc/default', ['init-script/default/convergence'])]
+                      ('/etc/init.d', ['init-script/convergence'])]
        )
 
 print "Cleaning up..."

@@ -56,9 +56,13 @@ function sendClientResponse(clientSocket, certificateManager, certificateInfo) {
 
 function checkCertificateValidity(certificateCache, activeNotaries, host, port, certificateInfo) {
   dump("Checking certificate cache: " + certificateInfo.sha1 + "\n");
+  var target = host + ":" + port;
 
   if (certificateCache.isCached(host, port, certificateInfo.sha1)) 
-    return {'status' : true, 'details' : [{'notary' : 'Certificate Cache', 'status' : 1}]};
+    return {'status' : true, 
+	    'target' : target, 
+	    'certificate' : certificateInfo.original,
+	    'details' : [{'notary' : 'Certificate Cache', 'status' : 1}]};
 
   dump("Not cached, checking notaries: " + certificateInfo.sha1 + "\n");
   var results = activeNotaries.checkValidity(host, port, certificateInfo);
@@ -106,7 +110,7 @@ onmessage = function(event) {
       certificateInfo.altNames   = null;      
     }
     
-    certificateInfo.encodeVerificationDetails(results.details);
+    certificateInfo.encodeVerificationDetails(results);
 
     this.sendClientResponse(clientSocket, certificateManager, certificateInfo);
 

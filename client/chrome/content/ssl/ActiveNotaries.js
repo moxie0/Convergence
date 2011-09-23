@@ -81,6 +81,7 @@ ActiveNotaries.prototype.buildCheckNotaries = function() {
 
 ActiveNotaries.prototype.checkHostValidity = function(host, port, certificate) {
   dump("Checking host validity...\n");
+  var target              = host + ":" + port;
   var results             = this.buildCheckNotaries();
   var bounceNotary        = results[0];
   var checkNotaries       = results[1];
@@ -126,7 +127,10 @@ ActiveNotaries.prototype.checkHostValidity = function(host, port, certificate) {
     status = (successCount >= majority);
   }
 
-  return {'status' : status, 'details' : verdictDetail};
+  return {'status'      : status, 
+	  'target'      : target, 
+	  'certificate' : certificate.original,
+	  'details'     : verdictDetail};
 };
 
 ActiveNotaries.prototype.getNotary = function(host, port) {

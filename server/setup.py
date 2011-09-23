@@ -44,8 +44,7 @@ setup  (name             = 'convergence-notary',
                             'convergence/convergence-bundle'],
         install_requires = REQUIRES,
         data_files       = [('share/convergence', ['README', 'INSTALL', 'COPYING']),
-                            ('/etc/init.d', ['init-script/convergence']),
-                            ('/etc/default', ['init-script/default/convergence'])]
+                            ('/etc/init.d', ['init-script/convergence'])]
        )
 
 print "Cleaning up..."

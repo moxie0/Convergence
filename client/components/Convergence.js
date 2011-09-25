@@ -134,20 +134,10 @@ Convergence.prototype = {
   
     this.cacheFile.append("convergence.sqlite");
 
-    var storageService = Components.classes["@mozilla.org/storage/service;1"]  
-    .getService(Components.interfaces.mozIStorageService);  
-    
-    var database = storageService.openDatabase(this.cacheFile);
+    var databaseHelper = new DatabaseHelper(this.cacheFile);
 
-    try {
-      database.executeSimpleSQL("CREATE TABLE fingerprints "                  + 
-				"(id integer primary key, location TEXT, "    + 
-				"fingerprint TEXT, timestamp INTEGER)");
-    } catch (e) {
-      dump("SQL exception: " + e + "\n");
-    }
-
-    database.close();
+    databaseHelper.initialize();
+    databaseHelper.close();
   },
 
   setEnabled: function(value) {
@@ -322,3 +312,4 @@ loadScript(true, "ssl", "Notary.js");
 loadScript(false, null, "SettingsManager.js");
 loadScript(false, null, "ConnectionManager.js");
 loadScript(true, "ssl", "NativeCertificateCache.js");
+loadScript(false, null, "DatabaseHelper.js");

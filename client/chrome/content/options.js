@@ -100,9 +100,9 @@ function updateAdvancedSettings() {
   document.getElementById("threshold").selectedItem       = document.getElementById(verificationThreshold);
 };
 
-function updateCacheSettings() {
+function updateCacheSettings(id, sortDirection) {
   var certificateCache = convergence.getNativeCertificateCache();
-  cachedCerts          = certificateCache.fetchAll();
+  cachedCerts          = certificateCache.fetchAll(id, sortDirection);
   certificateCache.close();
 
   var cacheTree = document.getElementById("cacheTree");
@@ -127,7 +127,8 @@ function updateCacheSettings() {
     getImageSrc: function(row,col){ return null; },
     getRowProperties: function(row,props){},
     getCellProperties: function(row,col,props){},
-    getColumnProperties: function(colid,col,props){}
+    getColumnProperties: function(colid,col,props){},
+    cycleHeader: function(col){}
   };
 };
 
@@ -226,3 +227,25 @@ function formatDate(date) {
   return year + "-" + month + "-" + dom + " " + hour + ":" + min + ":" + sec;
 }
 
+function sortCacheTree(column) {
+  var id = column.getAttribute("id");
+  var sortDirection = column.getAttribute("sortDirection");
+
+  // default first click (natural order by default) to "ascending" (sqlite default), otherwise switch sorting order
+  switch(sortDirection) {
+    case "natural":
+      sortDirection = "ascending";
+      break;
+    case "ascending":
+      sortDirection = "descending";
+      break;
+    case "descending":
+      sortDirection = "ascending";
+      break;
+    default:
+  }
+
+  // Update cache and sortDirection attribute
+  this.updateCacheSettings(id, sortDirection);
+  column.setAttribute("sortDirection", sortDirection);
+}

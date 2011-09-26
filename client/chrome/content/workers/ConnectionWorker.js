@@ -28,7 +28,6 @@
  *
  **/
 
-
 importScripts("chrome://convergence/content/ctypes/NSPR.js",
 	      "chrome://convergence/content/ctypes/NSS.js",
 	      "chrome://convergence/content/ctypes/SSL.js",
@@ -47,7 +46,8 @@ importScripts("chrome://convergence/content/ctypes/NSPR.js",
 	      "chrome://convergence/content/ssl/Notary.js",
 	      "chrome://convergence/content/ssl/NativeCertificateCache.js",
 	      "chrome://convergence/content/ssl/ActiveNotaries.js",
-	      "chrome://convergence/content/ssl/CertificateManager.js");
+	      "chrome://convergence/content/ssl/CertificateManager.js",
+	      "chrome://convergence/content/ConvergenceResponseStatus.js");
 
 function sendClientResponse(clientSocket, certificateManager, certificateInfo) {
   clientSocket.writeBytes(NSPR.lib.buffer("HTTP/1.0 200 Connection established\r\n\r\n"), 39);
@@ -62,7 +62,8 @@ function checkCertificateValidity(certificateCache, activeNotaries, host, port, 
     return {'status' : true, 
 	    'target' : target, 
 	    'certificate' : certificateInfo.original,
-	    'details' : [{'notary' : 'Certificate Cache', 'status' : 1}]};
+	    'details' : [{'notary' : 'Certificate Cache', 
+		          'status' : ConvergenceResponseStatus.VERIFICATION_SUCCESS}]};
 
   dump("Not cached, checking notaries: " + certificateInfo.sha1 + "\n");
   var results = activeNotaries.checkValidity(host, port, certificateInfo);

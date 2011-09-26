@@ -3,6 +3,12 @@ function ConvergenceResponseStatus(details) {
   this.details = details;
 }
 
+ConvergenceResponseStatus.VERIFICATION_INCONCLUSIVE = -2;
+ConvergenceResponseStatus.ANONYMIZATION_RELAY       = -1;
+ConvergenceResponseStatus.VERIFICATION_SUCCESS      = 0;
+ConvergenceResponseStatus.VERIFICATION_FAILURE      = 1;
+ConvergenceResponseStatus.CONNECTIVITY_FAILURE      = 2;
+
 ConvergenceResponseStatus.prototype.toString = function() {
   var result = "";
 
@@ -14,14 +20,15 @@ ConvergenceResponseStatus.prototype.toString = function() {
 };
 
 ConvergenceResponseStatus.prototype.stringifyResponseCode = function(responseCode) {
-  if (responseCode < 0) 
-    return "Connectivity Failure";
-
   switch (responseCode) {
-  case 0: return "Verification Failure.";
-  case 1: return "Verification Success.";
-  case 3: return "Anonymization Relay.";
+  case ConvergenceResponseStatus.VERIFICATION_INCONCLUSIVE: return "Verification Inconclusive.";
+  case ConvergenceResponseStatus.ANONYMIZATION_RELAY:       return "Anonymization Relay.";
+  case ConvergenceResponseStatus.VERIFICATION_SUCCESS:      return "Verification Success.";
+  case ConvergenceResponseStatus.VERIFICATION_FAILURE:      return "Verification Failure.";
+  case ConvergenceResponseStatus.CONNECTIVITY_FAILURE:      return "Connectivity Failure.";
   }
 
   return "Unknown";
 };
+
+

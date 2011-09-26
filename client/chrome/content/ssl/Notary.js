@@ -124,15 +124,15 @@ Notary.prototype.checkFingerprintList = function(response, certificate) {
     dump("Checking fingerprint: "  + fingerprintList[i].fingerprint + " == " + certificate.sha1 + "\n");
     if (fingerprintList[i].fingerprint == certificate.sha1) {
       dump("Returning success...\n");
-      return 1;
+      return ConvergenceResponseStatus.VERIFICATION_SUCCESS;
     }
   }
 
   dump("Nothing matched!\n");
-  return 0;
+  return ConvergenceResponseStatus.VERIFICATION_FAILURE;
 };
 
-Notary.prototype.checkValidity = function(host, port, certificate, proxy, connectivityIsFailure) {
+Notary.prototype.checkValidity = function(host, port, certificate, proxy) {
   var notarySocket = null;
 
   try {
@@ -140,9 +140,7 @@ Notary.prototype.checkValidity = function(host, port, certificate, proxy, connec
 
     if (notarySocket == null) {
       dump("Failed to construct socket to notary...\n");
-
-      if (connectivityIsFailure) return 0;
-      else                       return -1;
+      return ConvergenceResponseStatus.CONNECTIVITY_FAILURE;
     }
 
     this.sendRequest(notarySocket, host, port, certificate);
@@ -152,23 +150,20 @@ Notary.prototype.checkValidity = function(host, port, certificate, proxy, connec
     switch (response.getResponseCode()) {
     case 303: 
       dump("Notary response was inconclusive...\n");
-      return -1;
+      return ConvergenceResponseStatus.VERIFICATION_INCONCLUSIVE;
     case 409: 
       dump("Notary failed to find matching fingerprint!\n");
-      return 0;
+      return ConvergenceResponseStatus.VERIFICATION_FAILURE;
     case 200:
       dump("Notary indicates match, checking...\n");
-      return this.checkFingerprintList(response.getResponseBodyJson(), 
-				       certificate);
+      return this.checkFingerprintList(response.getResponseBodyJson(), certificate);
     default:
       dump("Got error notary response code: " + response.getResponseCode() + "\n");
-      if (connectivityIsFailure) return 0;
-      else                       return -1;      
+      return ConvergenceResponseStatus.CONNECTIVITY_FAILURE;
     }
   } catch (e) {
     dump(e + " , " + e.stack);
-    if (connectivityIsFailure) return 0;
-    else                       return -1;
+    return ConvergenceResponseStatus.CONNECTIVITY_FAILURE;
   } finally {
     if (notarySocket != null) {
       notarySocket.close();

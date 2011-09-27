@@ -100,9 +100,9 @@ function updateAdvancedSettings() {
   document.getElementById("threshold").selectedItem       = document.getElementById(verificationThreshold);
 };
 
-function updateCacheSettings(id, sortDirection) {
+function updateCacheSettings(sortColumn, sortDirection) {
   var certificateCache = convergence.getNativeCertificateCache();
-  cachedCerts          = certificateCache.fetchAll(id, sortDirection);
+  cachedCerts          = certificateCache.fetchAll(sortColumn, sortDirection);
   certificateCache.close();
 
   var cacheTree = document.getElementById("cacheTree");
@@ -228,24 +228,26 @@ function formatDate(date) {
 }
 
 function sortCacheTree(column) {
-  var id = column.getAttribute("id");
+  var id            = column.getAttribute("id");
   var sortDirection = column.getAttribute("sortDirection");
+  var sortColumn    = "location";
 
-  // default first click (natural order by default) to "ascending" (sqlite default), otherwise switch sorting order
   switch(sortDirection) {
-    case "natural":
-      sortDirection = "ascending";
+    case "ASC":
+      sortDirection = "DESC";
       break;
-    case "ascending":
-      sortDirection = "descending";
-      break;
-    case "descending":
-      sortDirection = "ascending";
+    case "DESC":
+      sortDirection = "ASC";
       break;
     default:
   }
 
-  // Update cache and sortDirection attribute
-  this.updateCacheSettings(id, sortDirection);
+  if      (id == "cacheLocation")    sortColumn = "location";
+  else if (id == "cacheFingerprint") sortColumn = "fingerprint";
+  else if (id == "cacheTimestamp")   sortColumn = "timestamp";
+
+  dump("id: " + id + " column: " + sortColumn + " direction: " + sortDirection + "\n");
+
+  this.updateCacheSettings(sortColumn, sortDirection);
   column.setAttribute("sortDirection", sortDirection);
 }

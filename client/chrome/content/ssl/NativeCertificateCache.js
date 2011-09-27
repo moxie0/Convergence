@@ -136,37 +136,25 @@ NativeCertificateCache.prototype.isCached = function(host, port, fingerprint) {
   return result;
 };
 
-NativeCertificateCache.prototype.fetchAll = function(id, sortDirection) {
-  var queryStatement    = "SELECT id,location,fingerprint,timestamp FROM fingerprints";
-  var orderBy = "false";
-  if(id != null) {
-    switch(id) {
-      case "cacheLocation":
-	queryStatement +=" ORDER BY location";
-	orderBy = "true";
-	break;
-      case "cacheTimestamp":
-	queryStatement +=" ORDER BY timestamp";
-	orderBy = "true";
-	break;
-      case "cacheFingerprint":
-	queryStatement +=" ORDER BY fingerprint";
-	orderBy = "true";
-	break;
-      default:
-    }
-    if(sortDirection != null && orderBy == "true") {
-      switch(sortDirection) {
-	case "ascending":
-	  queryStatement += " ASC";
-	  break;
-	case "descending":
-	  queryStatement += " DESC";
-	  break;
-	default:
-      }
-    }
+NativeCertificateCache.prototype.constructOrderTerm = function(sortColumn, sortDirection) {
+  var orderTerm = "ORDER BY location";
+
+  if (typeof sortColumn != 'undefined') {
+    orderTerm = "ORDER BY " + sortColumn;
   }
+
+  var sortTerm = "ASC";
+
+  if (typeof sortDirection != 'undefined') {
+    sortTerm = sortDirection;
+  }
+
+  return orderTerm + " " + sortTerm;
+};
+
+NativeCertificateCache.prototype.fetchAll = function(sortColumn, sortDirection) {
+  var queryStatement    = "SELECT id,location,fingerprint,timestamp FROM fingerprints " + 
+                          this.constructOrderTerm(sortColumn, sortDirection);
   var preparedStatement = SQLITE.types.sqlite3_stmt.ptr(0);
   var unused            = ctypes.char.ptr(0);
 

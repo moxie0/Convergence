@@ -59,11 +59,11 @@
 	<hbox flex="1">
 	  <tree id="cacheTree" align="stretch" flex="1" editable="true" persist="sortDirection" sortDirection="natural">
 	    <treecols>
-	      <treecol id="cacheLocation" label="Host:Port             " flex="1" editable="false" onclick="sortCacheTree(this)" sortDirection="natural" />
+	      <treecol id="cacheLocation" label="Host:Port             " flex="1" editable="false" onclick="sortCacheTree(this)" sortDirection="DESC" />
 	      <splitter class="tree-splitter" />
-	      <treecol id="cacheTimestamp" label="Timestamp          " flex="1" editable="false" onclick="sortCacheTree(this)" sortDirection="natural" />
+	      <treecol id="cacheTimestamp" label="Timestamp          " flex="1" editable="false" onclick="sortCacheTree(this)" sortDirection="DESC" />
 	      <splitter class="tree-splitter" />
-	      <treecol id="cacheFingerprint" label="Fingerprint" flex="1" editable="false" onclick="sortCacheTree(this)" sortDirection="natural" />
+	      <treecol id="cacheFingerprint" label="Fingerprint" flex="1" editable="false" onclick="sortCacheTree(this)" sortDirection="DESC" />
 	    </treecols>
 	    <treechildren />  
 	  </tree>

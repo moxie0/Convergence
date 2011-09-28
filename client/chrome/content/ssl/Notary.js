@@ -246,13 +246,13 @@ Notary.prototype.serializeForTransport = function() {
   var proxies    = this.getProxiesForNotary();
 
   var serialized = {'name' : this.name,
-  		    'host' : this.host,
-  		    'ssl_port' : this.sslPort,
-  		    'http_port' : this.httpPort,
-  		    'enabled' : this.enabled,
-  		    'fingerprint' : this.sha1Fingerprint,
-		    'http_proxy' : proxies['http_proxy'],
-		    'ssl_proxy' : proxies['ssl_proxy']};
+                    'host' : this.host,
+                    'ssl_port' : this.sslPort,
+                    'http_port' : this.httpPort,
+                    'enabled' : this.enabled,
+                    'fingerprint' : this.sha1Fingerprint,
+                    'http_proxy' : proxies['http_proxy'],
+                    'ssl_proxy' : proxies['ssl_proxy']};
 
   return serialized;
 };

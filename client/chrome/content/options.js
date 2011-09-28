@@ -100,9 +100,9 @@ function updateAdvancedSettings() {
   document.getElementById("threshold").selectedItem       = document.getElementById(verificationThreshold);
 };
 
-function updateCacheSettings() {
+function updateCacheSettings(sortColumn, sortDirection) {
   var certificateCache = convergence.getNativeCertificateCache();
-  cachedCerts          = certificateCache.fetchAll();
+  cachedCerts          = certificateCache.fetchAll(sortColumn, sortDirection);
   certificateCache.close();
 
   var cacheTree = document.getElementById("cacheTree");
@@ -127,7 +127,8 @@ function updateCacheSettings() {
     getImageSrc: function(row,col){ return null; },
     getRowProperties: function(row,props){},
     getCellProperties: function(row,col,props){},
-    getColumnProperties: function(colid,col,props){}
+    getColumnProperties: function(colid,col,props){},
+    cycleHeader: function(col){}
   };
 };
 
@@ -226,3 +227,27 @@ function formatDate(date) {
   return year + "-" + month + "-" + dom + " " + hour + ":" + min + ":" + sec;
 }
 
+function sortCacheTree(column) {
+  var id            = column.getAttribute("id");
+  var sortDirection = column.getAttribute("sortDirection");
+  var sortColumn    = "location";
+
+  switch(sortDirection) {
+    case "ASC":
+      sortDirection = "DESC";
+      break;
+    case "DESC":
+      sortDirection = "ASC";
+      break;
+    default:
+  }
+
+  if      (id == "cacheLocation")    sortColumn = "location";
+  else if (id == "cacheFingerprint") sortColumn = "fingerprint";
+  else if (id == "cacheTimestamp")   sortColumn = "timestamp";
+
+  dump("id: " + id + " column: " + sortColumn + " direction: " + sortDirection + "\n");
+
+  this.updateCacheSettings(sortColumn, sortDirection);
+  column.setAttribute("sortDirection", sortDirection);
+}

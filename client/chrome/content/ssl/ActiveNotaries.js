@@ -1,4 +1,3 @@
-
 // Copyright (c) 2011 Moxie Marlinspike <moxie@thoughtcrime.org>
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -77,10 +76,33 @@ ActiveNotaries.prototype.buildCheckNotaries = function() {
   }
 };
 
-// XXX This function disgusts me, and I wrote it.
+ActiveNotaries.prototype.isStandAsideResponse = function(response) {
+  return 
+  (response < ConvergenceResponseStatus.VERIFICATION_SUCCESS) ||
+  (response == ConvergenceResponseStatus.CONNECTIVITY_FAILURE && !this.isConnectivityErrorFailure())
+};
+
+ActiveNotaries.prototype.calculateAggregateStatus = function(successCount, checkedNotaryCount) {
+  if (this.isThresholdMinority() && (successCount > 0)) {
+    return true;
+  } else if (successCount <= 0 || 
+	     (this.isThresholdConsensus() && 
+	      (successCount < checkedNotaryCount))) 
+  {
+    return false;
+  } else {
+    var majority = Math.floor(checkedNotaryCount / 2);
+
+    if ((checkedNotaryCount % 2) != 0)
+      majority++;
+
+    return (successCount >= majority);
+  }
+};
 
 ActiveNotaries.prototype.checkHostValidity = function(host, port, certificate) {
   dump("Checking host validity...\n");
+  var target              = host + ":" + port;
   var results             = this.buildCheckNotaries();
   var bounceNotary        = results[0];
   var checkNotaries       = results[1];
@@ -92,17 +114,16 @@ ActiveNotaries.prototype.checkHostValidity = function(host, port, certificate) {
 
   if (bounceNotary != null)
     verdictDetail.push({'notary' : bounceNotary.host, 
-	                'status' : 3});
+	                'status' : ConvergenceResponseStatus.ANONYMIZATION_RELAY});
 
   for (var i in checkNotaries) {
     dump("Checking checknotary: " + i + "\n");
     var status         = null;
-    var notaryResponse = checkNotaries[i].checkValidity(host, port, certificate, bounceNotary, 
-							this.isConnectivityErrorFailure());
+    var notaryResponse = checkNotaries[i].checkValidity(host, port, certificate, bounceNotary);
 
-    if (notaryResponse > 0) {
+    if (notaryResponse == ConvergenceResponseStatus.VERIFICATION_SUCCESS) {
       successCount++;
-    } else if (notaryResponse < 0) {
+    } else if (this.isStandAsideResponse(notaryResponse)) {
       checkedNotaryCount--;
     }
 
@@ -110,23 +131,12 @@ ActiveNotaries.prototype.checkHostValidity = function(host, port, certificate) {
     verdictDetail.push({'notary' : checkNotaries[i].host, 'status' : notaryResponse});
   }
 
-  if (this.isThresholdMinority() && (successCount > 0)) {
-    status = true;
-  } else if (successCount <= 0 || 
-	     (this.isThresholdConsensus() && 
-	      (successCount < checkedNotaryCount))) 
-  {
-    status = false;
-  } else {
-    var majority = Math.floor(checkedNotaryCount / 2);
+  var aggregateStatus = this.calculateAggregateStatus(successCount, checkedNotaryCount);
 
-    if ((checkedNotaryCount % 2) != 0)
-      majority++;
-
-    status = (successCount >= majority);
-  }
-
-  return {'status' : status, 'details' : verdictDetail};
+  return {'status'      : aggregateStatus, 
+	  'target'      : target, 
+	  'certificate' : certificate.original,
+	  'details'     : verdictDetail};
 };
 
 ActiveNotaries.prototype.getNotary = function(host, port) {

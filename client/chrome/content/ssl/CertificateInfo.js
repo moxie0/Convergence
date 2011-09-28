@@ -38,7 +38,20 @@ function CertificateInfo(certificate, serialized) {
 
   this.md5         = this.calculateFingerprint(certificate, NSS.lib.SEC_OID_MD5, 16);
   this.sha1        = this.calculateFingerprint(certificate, NSS.lib.SEC_OID_SHA1, 20);
+  this.original    = this.encodeOriginalCertificate(certificate);
 }
+
+CertificateInfo.prototype.encodeOriginalCertificate = function(certificate) {
+  var derCert = certificate.contents.derCert;
+  var asArray = ctypes.cast(derCert.data, ctypes.ArrayType(ctypes.unsigned_char, derCert.len).ptr).contents;
+  var encoded = '';
+
+  for (var i=0;i<asArray.length;i++) {
+    encoded += String.fromCharCode(asArray[i]);
+  }
+
+  return btoa(encoded);
+};
 
 CertificateInfo.prototype.encodeVerificationDetails = function(details) {
   this.verificationDetails = JSON.stringify(details);

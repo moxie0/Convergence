@@ -134,20 +134,10 @@ Convergence.prototype = {
   
     this.cacheFile.append("convergence.sqlite");
 
-    var storageService = Components.classes["@mozilla.org/storage/service;1"]  
-    .getService(Components.interfaces.mozIStorageService);  
-    
-    var database = storageService.openDatabase(this.cacheFile);
+    var databaseHelper = new DatabaseHelper(this.cacheFile);
 
-    try {
-      database.executeSimpleSQL("CREATE TABLE fingerprints "                  + 
-				"(id integer primary key, location TEXT, "    + 
-				"fingerprint TEXT, timestamp INTEGER)");
-    } catch (e) {
-      dump("SQL exception: " + e + "\n");
-    }
-
-    database.close();
+    databaseHelper.initialize();
+    databaseHelper.close();
   },
 
   setEnabled: function(value) {
@@ -223,12 +213,18 @@ Convergence.prototype = {
 
     return false;
   },
+
+  isWhitelisted: function(uri) {
+    return uri.host == "localhost" ||
+           uri.host == "127.0.0.1" ||
+           uri.host == "aus3.mozilla.org";    
+  },
   
   applyFilter : function(protocolService, uri, proxy) {
     if (!this.enabled)
       return proxy;
 
-    if ((uri.scheme == "https") && (!this.isNotaryUri(uri))) {
+    if ((uri.scheme == "https") && (!this.isNotaryUri(uri)) && (!this.isWhitelisted(uri))) {
       this.connectionManager.setProxyTunnel(proxy);
 
       return this.localProxy.getProxyInfo();
@@ -316,3 +312,4 @@ loadScript(true, "ssl", "Notary.js");
 loadScript(false, null, "SettingsManager.js");
 loadScript(false, null, "ConnectionManager.js");
 loadScript(true, "ssl", "NativeCertificateCache.js");
+loadScript(false, null, "DatabaseHelper.js");

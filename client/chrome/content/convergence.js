@@ -47,26 +47,39 @@ var Convergence = {
       return;
     }
 
-    var tip = "";
-      
-    for (var i in status) {      
-      tip += (status[i].notary + " : " + this.stringifyResponseCode(status[i].status) + "\n");
+    if (!status.status) {
+      dump("Displaying certificate fialure notification\n");
+      this.displayCertificateFailureNotification(status);
     }
 
-    panel.tooltipText = tip;
+    var responseStatus = new ConvergenceResponseStatus(status.details);
+    panel.tooltipText  = responseStatus.toString();
   },
 
-  stringifyResponseCode: function(responseCode) {
-    if (responseCode < 0) 
-      return "Connectivity Failure";
+  displayCertificateFailureNotification: function(status) {
+    var message = 'Convergence Certificate Verification Failure';  
+    var nb      = gBrowser.getNotificationBox();  
+    var n       = nb.getNotificationWithValue('convergence-certificate-error');  
 
-    switch (responseCode) {
-    case 0: return "Verification Failure.";
-    case 1: return "Verification Success.";
-    case 3: return "Anonymization Relay.";
-    }
-
-    return "Unknown";
+    if(n) {  
+      n.label = message;  
+    } else {  
+      var buttons = [{  
+	  label: 'View Details',  
+	  accessKey: null,  
+	  popup: null,
+          callback: function() {  
+	    window.openDialog('chrome://convergence/content/exceptionDialog.xul', 
+			      'dialog', 'modal', status);
+	    return false;
+          }  
+        }];  
+      
+      const priority = nb.PRIORITY_WARNING_MEDIUM;  
+      nb.appendNotification(message, 'convergence-certificate-error',  
+			    'chrome://global/skin/icons/warning-16.png',
+			    priority, buttons);  
+    }  
   },
 
   initializeTabWatcher: function() {
@@ -201,8 +214,6 @@ var Convergence = {
     toolbar.setAttribute("currentset", toolbar.currentSet);
     document.persist(toolbar.id, "currentset");
   },
-
-
 };
 
 

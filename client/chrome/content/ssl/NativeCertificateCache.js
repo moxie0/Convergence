@@ -114,6 +114,7 @@ NativeCertificateCache.prototype.isCached = function(host, port, fingerprint) {
 
   if (status != SQLITE.lib.SQLITE_OK) {
     throw "Unable to bind parameter to prepared statement: " + status;
+  
   }
 
   var status = SQLITE.lib.sqlite3_bind_text(preparedStatement, 2, fingerprint, -1, staticData);
@@ -135,8 +136,25 @@ NativeCertificateCache.prototype.isCached = function(host, port, fingerprint) {
   return result;
 };
 
-NativeCertificateCache.prototype.fetchAll = function() {
-  var queryStatement    = "SELECT id,location,fingerprint,timestamp FROM fingerprints";
+NativeCertificateCache.prototype.constructOrderTerm = function(sortColumn, sortDirection) {
+  var orderTerm = "ORDER BY location";
+
+  if (typeof sortColumn != 'undefined') {
+    orderTerm = "ORDER BY " + sortColumn;
+  }
+
+  var sortTerm = "ASC";
+
+  if (typeof sortDirection != 'undefined') {
+    sortTerm = sortDirection;
+  }
+
+  return orderTerm + " " + sortTerm;
+};
+
+NativeCertificateCache.prototype.fetchAll = function(sortColumn, sortDirection) {
+  var queryStatement    = "SELECT id,location,fingerprint,timestamp FROM fingerprints " + 
+                          this.constructOrderTerm(sortColumn, sortDirection);
   var preparedStatement = SQLITE.types.sqlite3_stmt.ptr(0);
   var unused            = ctypes.char.ptr(0);
 

@@ -240,7 +240,18 @@ CertificateManager.prototype.generateCertificate = function(privateKey, publicKe
   return certificate;
 };
 
+CertificateManager.prototype.unlockPsmIfNecessary = function() {
+  var token = Components.classes["@mozilla.org/security/pk11tokendb;1"]
+              .getService(Components.interfaces.nsIPK11TokenDB).findTokenByName("");
+
+  if (!token.isLoggedIn()) {
+    token.login(true);
+  }
+};
+
 CertificateManager.prototype.generateKeyPair = function(permanent, nick) {
+  this.unlockPsmIfNecessary();
+
   var slot       = NSS.lib.PK11_GetInternalKeySlot();
   var publicKey  = NSS.types.SECKEYPublicKey.ptr(0);
   var rsaParams  = NSS.types.PK11RSAGenParams({'keySizeInBits' : 1024, 'pe' : 65537});

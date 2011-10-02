@@ -57,7 +57,7 @@ from twisted.internet import reactor
 
 import sys, string, os, getopt, logging, pwd, grp, convergence.daemonize
 
-gVersion                  = "0.2"
+gVersion                  = "0.3"
 CONVERGENCE_DATABASE_PATH = '/var/lib/convergence/convergence.db'
 
 class ServerContextFactory:

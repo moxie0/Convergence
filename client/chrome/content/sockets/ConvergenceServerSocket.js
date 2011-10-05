@@ -16,63 +16,107 @@
 
 
 /**
- * This class is responsible for listening for incoming connections.
- * It's what the "local proxy" uses to accept outbound connections
- * and MITM.
+ * This class is responsible for negotiating SSL with the browser/client
+ * connection that we've intercepted and are MITMing on the way out.
  *
  **/
 
 
-function ConvergenceServerSocket(serialized) {
+function ConvergenceServerSocket(fd, serialized) {
   if (typeof serialized != 'undefined') {
-    this.fd         = Serialization.deserializeDescriptor(serialized[0]);
-    this.address    = Serialization.deserializeAddress(serialized[1]);
-    this.listenPort = this.address.port;
-
-    dump("Restored FD: " + this.fd + "\n");
-    dump("Restored Address: " + this.address + "\n");
+    this.fd = Serialization.deserializeDescriptor(serialized);
   } else {
-    var addr = NSPR.types.PRNetAddr();
-    NSPR.lib.PR_SetNetAddr(NSPR.lib.PR_IpAddrLoopback, 
-			   NSPR.lib.PR_AF_INET, 
-			   0, addr.address());
-    
-    var fd     = NSPR.lib.PR_OpenTCPSocket(NSPR.lib.PR_AF_INET);
-    var status = NSPR.lib.PR_Bind(fd, addr.address());
-    
-    if (status != 0)
-      throw "ServerSocket failed to bind!";
-
-    var status = NSPR.lib.PR_GetSockName(fd, addr.address());
-    
-    if (status != 0)
-      throw "Unable to get socket information!";
-    
-    var status = NSPR.lib.PR_Listen(fd, -1);
-    
-    if (status != 0)
-      throw "ServerSocket failed to listen!";
-
-    this.fd         = fd;
-    this.address    = addr;
-    this.listenPort = NSPR.lib.PR_ntohs(this.address.port);
-
-    dump("LISTEN PORT: " + this.listenPort + "\n");
-  }
+    this.fd = fd;
+  }  
 }
 
-ConvergenceServerSocket.prototype.serialize = function() {
-  return [Serialization.serializePointer(this.fd), 
-	  Serialization.serializeAddress(this.address)];
-};
+ConvergenceServerSocket.prototype.negotiateSSL = function(certificateManager, certificateInfo) {
+  var material = certificateManager.generatePeerCertificate(certificateInfo);
 
-ConvergenceServerSocket.prototype.accept = function() {
-  var clientFd = NSPR.lib.PR_Accept(this.fd, this.address.address(), 
-				    NSPR.lib.PR_INTERVAL_NO_TMEOUT);
-  
-  if (clientFd.isNull()) {
-    throw "Failed accept()!";
+  this.fd      = SSL.lib.SSL_ImportFD(null, this.fd); 
+
+  if (this.fd  == null || this.fd.isNull()) {
+    throw "Bad SSL FD!";
+  }
+ 
+  var status   = SSL.lib.SSL_ConfigSecureServer(this.fd, material.certificate, material.key,
+						SSL.lib.NSS_FindCertKEAType(material.certificate));
+
+  if (status == -1) {
+    throw "Error on SSL_ConfigSecureServer!";
   }
   
-  return new ConvergenceSocket(clientFd);
+  var status = SSL.lib.SSL_ResetHandshake(this.fd, NSPR.lib.PR_TRUE);
+  
+  if (status == -1) {
+    throw "Error on SSL_RestHandshake!";
+  }
+
+  // var status = NSS.lib.SSL_ForceHandshake(this.fd);
+
+  var status = SSL.lib.SSL_ForceHandshakeWithTimeout(this.fd, NSPR.lib.PR_SecondsToInterval(10));
+
+  if (status == -1) {
+    throw "Error completing SSL handshake!";
+  }
+};
+
+ConvergenceServerSocket.prototype.available = function() {
+  return NSPR.lib.PR_Available(this.fd);
+};
+
+ConvergenceServerSocket.prototype.writeBytes = function(buffer, length) {
+  return NSPR.lib.PR_Write(this.fd, buffer, length);
+};
+
+// ConvergenceServerSocket.prototype.readBytes = function(buffer) {
+//   var read   = NSPR.lib.PR_Read(this.fd, buffer, 4096);
+
+//   if (read == -1) {
+//     if (NSPR.lib.PR_GetError() == NSPR.lib.PR_WOULD_BLOCK_ERROR) {
+//       return -1;
+//     } else {
+//       dump("Read error: " + NSPR.lib.PR_GetError() + "\n");
+//       return 0;
+//     }
+//   }
+
+//   return read;
+// };
+
+ConvergenceServerSocket.prototype.readFully = function(length) {
+  var buffer = new NSPR.lib.unsigned_buffer(length);
+  var offset = 0;
+
+  while (offset < length) { 
+    var read = NSPR.lib.PR_Read(this.fd, buffer.addressOfElement(offset), length-offset);
+
+    if (read < 0)
+      return null;
+    
+    offset += read;
+  }
+
+  return buffer;
+};
+
+ConvergenceServerSocket.prototype.readString = function() {
+  dump("Reading from FD: " + this.fd + "\n");
+  var buffer = new NSPR.lib.buffer(4096);
+  var read   = NSPR.lib.PR_Read(this.fd, buffer, 4095);
+
+  if (read <= 0) {
+    return null;
+  }
+
+  buffer[read] = 0;
+  return buffer.readString();
+};
+
+ConvergenceServerSocket.prototype.serialize = function() {
+  return Serialization.serializePointer(this.fd);
+};
+
+ConvergenceServerSocket.prototype.close = function() {
+  NSPR.lib.PR_Close(this.fd);
 };

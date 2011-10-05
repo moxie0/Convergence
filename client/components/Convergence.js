@@ -92,7 +92,7 @@ Convergence.prototype = {
   },
 
   initializeConnectionManager : function() {
-    this.connectionManager = new ConnectionManager(this.localProxy.getServerSocket(),
+    this.connectionManager = new ConnectionManager(this.localProxy.getListenSocket(),
 						   this.nssFile,
 						   this.sslFile,
 						   this.nsprFile,
@@ -187,9 +187,9 @@ Convergence.prototype = {
       this.connectionManager.shutdown();      
     } else if (topic == 'network:offline-status-changed') {
       if (data == 'online') {
-	dump("Got network state change, shutting down serversocket...\n");
+	dump("Got network state change, shutting down listensocket...\n");
 	this.connectionManager.shutdown();
-	dump("Initializing serversocket...\n");
+	dump("Initializing listensocket...\n");
 	this.initializeConnectionManager();
       }
     }
@@ -298,16 +298,17 @@ loadScript(true, "ctypes", "NSS.js");
 loadScript(true, "ctypes", "SSL.js");
 loadScript(true, "ctypes", "SQLITE.js");
 
-loadScript(true, "sockets", "ConvergenceDestinationSocket.js");
+loadScript(true, "sockets", "ConvergenceListenSocket.js");
+loadScript(true, "sockets", "ConvergenceClientSocket.js");
 loadScript(true, "sockets", "ConvergenceServerSocket.js");
-loadScript(true, "sockets", "ConvergenceSocket.js");
 loadScript(true, "ctypes", "Serialization.js");
 loadScript(true, "ssl", "CertificateManager.js");
 loadScript(true, "ssl", "CertificateInfo.js");
-loadScript(true, "protocols", "HttpProxyServer.js");
+loadScript(true, "proxy", "HttpProxyServer.js");
 
 loadScript(false, null, "LocalProxy.js");
 
+loadScript(true, "ssl", "PhysicalNotary.js");
 loadScript(true, "ssl", "Notary.js");
 loadScript(false, null, "SettingsManager.js");
 loadScript(false, null, "ConnectionManager.js");

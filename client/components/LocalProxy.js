@@ -25,10 +25,10 @@
 
 function LocalProxy() {
   this.wrappedJSObject   = this;
-  this.serverSocket      = null;
+  this.listenSocket      = null;
   this.proxyInfo         = null;
 
-  this.constructServerSocket();
+  this.constructListenSocket();
   this.initializeProxyInfo();
 }
 
@@ -36,17 +36,17 @@ LocalProxy.prototype.getProxyInfo = function() {
   return this.proxyInfo;
 };
 
-LocalProxy.prototype.getServerSocket = function() {
-  return this.serverSocket;
+LocalProxy.prototype.getListenSocket = function() {
+  return this.listenSocket;
 };
 
-LocalProxy.prototype.constructServerSocket = function() {
-    this.serverSocket = new ConvergenceServerSocket();  
+LocalProxy.prototype.constructListenSocket = function() {
+    this.listenSocket = new ConvergenceListenSocket();  
 };
 
 LocalProxy.prototype.initializeProxyInfo = function() {
   var proxyService = Components.classes["@mozilla.org/network/protocol-proxy-service;1"].getService(Components.interfaces.nsIProtocolProxyService);
-  this.proxyInfo   = proxyService.newProxyInfo("http", "localhost", this.serverSocket.listenPort, 1, 0, null);
+  this.proxyInfo   = proxyService.newProxyInfo("http", "localhost", this.listenSocket.listenPort, 1, 0, null);
 };
 
 

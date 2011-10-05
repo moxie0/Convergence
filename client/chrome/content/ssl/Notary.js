@@ -27,68 +27,72 @@
 
 function Notary(serialized) {
   if (typeof serialized == 'undefined') {
-    this.name              = null;
-    this.host              = null;
-    this.httpPort          = -1;
-    this.sslPort           = -1;  
-    this.certificate       = null;
-    this.enabled           = false;
-    this.sha1Fingerprint   = null;    
+    this.name             = null;
+    this.enabled          = false;
+    this.physicalNotaries = new Array();
+    this.open             = true;
+    this.parent           = true;
   } else {
-    this.name            = serialized.name;
-    this.host            = serialized.host;
-    this.httpPort        = serialized.http_port;
-    this.sslPort         = serialized.ssl_port;
-    this.enabled         = serialized.enabled;
-    this.sha1Fingerprint = serialized.fingerprint;
-    this.httpProxy       = serialized.http_proxy;
-    this.sslProxy        = serialized.ssl_proxy;
+    this.name             = serialized.name;
+    this.enabled          = serialized.enabled;
+    this.open             = true;
+    this.parent           = true;
+    this.physicalNotaries = new Array();
+    
+    for (var i=0;i<serialized.physical_notaries.length;i++) {
+      this.physicalNotaries.push(new PhysicalNotary(serialized.physical_notaries[i]));
+    }
   }
 }
 
-// It's ridiculous that I have to do this myself, but of course,
-// this is Mozilla.
-Notary.prototype.extractRawCert = function(certificate) {
-  var beginIndex = certificate.indexOf("-----BEGIN CERTIFICATE-----");
-  beginIndex    += "-----BEGIN CERTIFICATE-----".length + 1;
+Notary.prototype.getHttpDestinations = function() {
+  var destinations = new Array();
 
-  var endIndex   = certificate.indexOf("-----END CERTIFICATE-----") - 1;
-  var rawCert    = certificate.substring(beginIndex, endIndex);
-  rawCert        = rawCert.replace(/^\s*(\S*(\s+\S+)*)\s*$/, "$1");
-  rawCert        = rawCert.replace(/\n/g, "");
+  for (var i=0;i<this.physicalNotaries.length;i++) {
+    dump("Adding: " + this.physicalNotaries[i].host + " : " + this.physicalNotaries[i].httpPort + "\n");
+    destinations.push({"host" : this.physicalNotaries[i].host , 
+	               "port" : this.physicalNotaries[i].httpPort});
+  }
 
-  return rawCert;
+  return destinations;
 };
 
-Notary.prototype.parseSha1Fingerprint = function(certificate) {
-  if (certificate == null)
-    return null;
+Notary.prototype.getSslDestinations = function() {
+  var destinations = new Array();
 
-  var certDB = Components.classes["@mozilla.org/security/x509certdb;1"]
-  .getService(Components.interfaces.nsIX509CertDB);
+  for (var i=0;i<this.physicalNotaries.length;i++) {
+    destinations.push({"host" : this.physicalNotaries[i].host , 
+	               "port" : this.physicalNotaries[i].sslPort});
+  }
 
-  var rawCert = this.extractRawCert(certificate);
-  var x509    = certDB.constructX509FromBase64(rawCert);
-  return x509.sha1Fingerprint;
+  return destinations;
 };
 
-Notary.prototype.getSha1Fingerprint = function() {
-  return this.sha1Fingerprint;
+Notary.prototype.getBouncedDestinations = function() {
+  var destinations = new Array();
+
+  for (var i=0;i<this.physicalNotaries.length;i++) {
+    destinations.push({"host" : this.physicalNotaries[i].host , 
+	               "port" : 4242});
+  }
+
+  return destinations;
 };
 
-Notary.prototype.makeConnection = function(proxy) {
+
+Notary.prototype.makeConnection = function(proxy) {  
   var notarySocket;
 
   if (typeof proxy != 'undefined' && proxy != null) {
-    dump("HTTP proxy for notary: " + this.httpProxy + "\n");
-    dump("Bouncing request through: " + proxy.host + " to: " + this.host + "\n");
-    notarySocket       = new ConvergenceDestinationSocket(proxy.host, parseInt(proxy.httpPort), this.httpProxy);
-    var proxyConnector = new HttpProxyConnector();
-    proxyConnector.makeConnection(notarySocket, this.host, 4242);
+    dump("Network proxy for notary: " + this.httpProxy + "\n");
+    dump("Bouncing request through: " + proxy.getHttpDestinations() + " to: " + this.getBouncedDestinations() + "\n");
+    notarySocket       = new ConvergenceNotarySocket(proxy.getHttpDestinations(), this.httpProxy);
+    var proxyConnector = new NotaryProxyConnector();
+    proxyConnector.makeConnection(notarySocket, this.getBouncedDestinations());
   } else {
     dump("Making unbounced request...\n");
     dump("SSL proxy for notary: " + this.sslProxy + "\n");
-    notarySocket = new ConvergenceDestinationSocket(this.host, parseInt(this.sslPort), this.sslProxy);
+    notarySocket = new ConvergenceNotarySocket(this.getSslDestinations(), this.sslProxy);
   }
 
   return notarySocket;
@@ -99,12 +103,16 @@ Notary.prototype.makeSSLConnection = function(proxy) {
   var notaryCertificate     = notarySocket.negotiateSSL();
   var notaryCertificateInfo = new CertificateInfo(notaryCertificate);
 
-  if (!(notaryCertificateInfo.sha1 == this.sha1Fingerprint)) {
-    dump("Notary certificate did not match local copy...\n");
-    return null;    
+  for (var i=0;i<this.physicalNotaries.length;i++) {
+    dump("Comparing: " + notaryCertificateInfo.sha1 + " and " + this.physicalNotaries[i].sha1Fingerprint + "\n");
+    if (notaryCertificateInfo.sha1 == this.physicalNotaries[i].sha1Fingerprint) {
+      return notarySocket;
+    }
   }
+  
+  dump("Notary certificate did not match local copy...\n");
 
-  return notarySocket;
+  return null;
 };
 
 
@@ -115,6 +123,13 @@ Notary.prototype.sendRequest = function(notarySocket, host, port, certificate) {
   dump("Sending request: " + request + "\n");
 
   notarySocket.writeBytes(NSS.lib.buffer(request), request.length);
+};
+
+Notary.prototype.readResponse = function(notarySocket) {
+  var response = new HttpParser(notarySocket);
+  dump("Got notary response: " + response.getResponseBody() + "\n");
+
+  return response;
 };
 
 Notary.prototype.checkFingerprintList = function(response, certificate) {
@@ -144,8 +159,7 @@ Notary.prototype.checkValidity = function(host, port, certificate, proxy) {
     }
 
     this.sendRequest(notarySocket, host, port, certificate);
-    var response = new HttpParser(notarySocket);
-    dump("Got Notary response: " + response.getResponseBody() + "\n");
+    var response = this.readResponse(notarySocket);
 
     switch (response.getResponseCode()) {
     case 303: 
@@ -171,30 +185,6 @@ Notary.prototype.checkValidity = function(host, port, certificate, proxy) {
   }
 };
 
-Notary.prototype.getHost = function() {
-  return this.host;
-};
-
-Notary.prototype.setHost = function(host) {
-  this.host = host;
-};
-
-Notary.prototype.getSSLPort = function() {
-  return this.sslPort;
-};
-
-Notary.prototype.setSSLPort = function(port) {
-  this.sslPort = port;
-};
-
-Notary.prototype.getHTTPPort = function() {
-  return this.httpPort;
-};
-
-Notary.prototype.setHTTPPort = function(port) {
-  this.httpPort = port;
-};
-
 Notary.prototype.getName = function() {
   return this.name;
 };
@@ -211,74 +201,62 @@ Notary.prototype.setEnabled = function(value) {
   this.enabled = value;
 };
 
-Notary.prototype.setCertificate = function(certificate) {
-  this.certificate     = certificate;
-  this.sha1Fingerprint = this.parseSha1Fingerprint(certificate);
+Notary.prototype.getPhysicalNotaries = function() {
+  return this.physicalNotaries;
 };
 
-Notary.prototype.getCertificate = function() {
-  return this.certificate;
-};
-
-// This should only be called from within XPCOM,
-// so we can get away with using XPCOM compoenents
-// at this point.
-Notary.prototype.getProxiesForNotary = function() {
-  var ioService = Components.classes["@mozilla.org/network/io-service;1"]
-  .getService(Components.interfaces.nsIIOService);
-  
-  var proxyService = Components.classes["@mozilla.org/network/protocol-proxy-service;1"]
-  .getService(Components.interfaces.nsIProtocolProxyService);
-
-  var httpUri             = ioService.newURI("http://" + this.host + ":" + this.httpPort, null, null);
-  var sslUri              = ioService.newURI("https://" + this.host + ":" + this.sslPort, null, null);
-
-  var httpProxy           = proxyService.resolve(httpUri, null);
-  var sslProxy            = proxyService.resolve(sslUri, null);
-
-  var serializedHttpProxy = Serialization.serializeProxyInfo(httpProxy);
-  var serializedSslProxy  = Serialization.serializeProxyInfo(sslProxy);
-
-  return {'http_proxy' : serializedHttpProxy, 'ssl_proxy' : serializedSslProxy};
+Notary.prototype.setPhysicalNotaries = function(physicalNotaries) {
+  this.physicalNotaries = physicalNotaries;
 };
 
 Notary.prototype.serializeForTransport = function() {
-  var proxies    = this.getProxiesForNotary();
+  var serializedPhysicalNotaries = new Array();
 
-  var serialized = {'name' : this.name,
-  		    'host' : this.host,
-  		    'ssl_port' : this.sslPort,
-  		    'http_port' : this.httpPort,
-  		    'enabled' : this.enabled,
-  		    'fingerprint' : this.sha1Fingerprint,
-		    'http_proxy' : proxies['http_proxy'],
-		    'ssl_proxy' : proxies['ssl_proxy']};
+  for (var i=0;i<this.physicalNotaries.length;i++) {
+    serializedPhysicalNotaries.push(this.physicalNotaries[i].serializeForTransport());
+  }
+
+  var serialized = {'name'              : this.name,
+  		    'enabled'           : this.enabled,
+		    'physical_notaries' : serializedPhysicalNotaries};
 
   return serialized;
 };
 
+
 Notary.prototype.serialize = function(xmlDocument) {
   var proxyElement = xmlDocument.createElement("notary");
   proxyElement.setAttribute("name", this.name);
-  proxyElement.setAttribute("host", this.host);
-  proxyElement.setAttribute("ssl-port", this.sslPort);
-  proxyElement.setAttribute("http-port", this.httpPort);
   proxyElement.setAttribute("enabled", this.enabled);
 
-  var certificateText = xmlDocument.createTextNode(this.certificate);
-  proxyElement.appendChild(certificateText);
+  for (var i=0;i<this.physicalNotaries.length;i++) {
+    var physicalElement = this.physicalNotaries[i].serialize();
+    proxyElement.appendChild(physicalElement);
+  }
 
   return proxyElement;
 };
 
-Notary.prototype.deserialize = function(element) {
-  this.name            = element.getAttribute("name");
-  this.host            = element.getAttribute("host");
-  this.sslPort         = element.getAttribute("ssl-port");
-  this.httpPort        = element.getAttribute("http-port");
-  this.enabled         = (element.getAttribute("enabled") == "true");
-  var certificateNode  = element.childNodes[0];
-  this.certificate     = certificateNode.nodeValue;
-  this.sha1Fingerprint = this.parseSha1Fingerprint(this.certificate);
-};
+Notary.prototype.deserialize = function(logicalElement, version) {
+  if (version > 0) {
+    this.name            = logicalElement.getAttribute("name");
+    this.enabled         = (logicalElement.getAttribute("enabled") == "true");
+    var physicalNotaries = logicalElement.getElementsByTagName("physical-notary");
 
+    for (var i=0;i<physicalNotaries.length;i++) {
+      var physicalNotaryElement = physicalNotaries.item(i);
+      physicalNotaryElement.QueryInterface(Components.interfaces.nsIDOMElement);
+
+      var physicalNotary = new PhysicalNotary();
+      physicalNotary.deserialize(physicalNotaryElement);
+      this.physicalNotaries.push(physicalNotary);
+    }
+  } else {
+    this.name    = logicalElement.getAttribute("host");
+    this.enabled = (logicalElement.getAttribute("enabled") == "true");
+
+    var physicalNotary = new PhysicalNotary();
+    physicalNotary.deserialize(logicalElement);
+    this.physicalNotaries.push(physicalNotary);
+  }
+}

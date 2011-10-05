@@ -33,7 +33,7 @@
  * time.  Once an SSL MITM channel is setup, the pair of sockets is handed
  * to the shuffle worker, which simply poll()'s on the entire set of sockets
  * to shuffle, and moves data back and forth across it.  Additionally, the
- * ShuffleWorker is poll()ing on the ServerSocket, to accept outbound connection
+ * ShuffleWorker is poll()ing on the ListenSocket, to accept outbound connection
  * initiations.
  *
  * So new connections are accept()ed in ShuffleWorker, passed off to the
@@ -49,7 +49,7 @@
 const TYPE_INITIALIZE = 1;
 const TYPE_CONNECTION = 2;
 
-function ConnectionManager(serverSocket, nssFile, sslFile, nsprFile, sqliteFile, 
+function ConnectionManager(listenSocket, nssFile, sslFile, nsprFile, sqliteFile, 
 			   cacheFile, certificateManager, settingsManager) 
 {
   this.certificateManager    = certificateManager;
@@ -59,7 +59,7 @@ function ConnectionManager(serverSocket, nssFile, sslFile, nsprFile, sqliteFile,
   this.sslFile               = sslFile;
   this.sqliteFile            = sqliteFile;
   this.cacheFile             = cacheFile;
-  this.serverSocket          = serverSocket;
+  this.listenSocket          = listenSocket;
   this.proxyInfo             = null;
   this.buffer                = new NSPR.lib.buffer(5);
 
@@ -141,7 +141,7 @@ ConnectionManager.prototype.initializeShuffleWorker = function() {
   try {
     shuffleWorker.postMessage({'type' : TYPE_INITIALIZE, 
 	  'fd' : Serialization.serializePointer(this.wakeupRead),
-	  'serverSocket' : this.serverSocket.serialize(),
+	  'listenSocket' : this.listenSocket.serialize(),
 	  'nssFile' : this.nssFile.path,
 	  'sslFile' : this.sslFile.path,
 	  'nsprFile' : this.nsprFile.path});

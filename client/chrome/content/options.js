@@ -1,5 +1,4 @@
 // Copyright (c) 2010 Moxie Marlinspike <moxie@thoughtcrime.org>
-
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 3 of the
@@ -132,42 +131,124 @@ function updateCacheSettings(sortColumn, sortDirection) {
   };
 };
 
+function getNotaryForRow(row) {
+  var index = 0;
+
+  for (var i=0;i<notaries.length;i++) {
+    if (index == row) 
+      return notaries[i];
+
+    if (notaries[i].open) {
+      var subnotaries = notaries[i].getPhysicalNotaries();
+
+      for (var j=0;j<subnotaries.length;j++) {
+	if (++index == row)
+	  return subnotaries[j];
+      }
+    }
+
+    index++;
+  }
+};
+
+function getNotaryRowCount() {
+  var count = 0;
+
+  for (var i=0;i<notaries.length;i++) {
+    count++;
+
+    if (notaries[i].open) {
+      count += notaries[i].getPhysicalNotaries().length;
+    }
+  }
+
+  dump("Notary row count: " + count + "\n");
+  return count;
+};
+
 function updateNotarySettings() {
   var notaryTree = getNotaryTree();
 
   notaryTree.view = {  
-    rowCount : notaries.length,
+    rowCount : getNotaryRowCount(),
     
     getCellText : function(row, column) {
-      var notary = notaries[row];
+      var notary    = getNotaryForRow(row);
+      var isLogical = (notary.parent == true);
 
-      if      (column.id == "notaryHost")     return notary.getHost();
-      else if (column.id == "notaryHTTPPort") return notary.getHTTPPort();
-      else if (column.id == "notarySSLPort")  return notary.getSSLPort();
+      if      (column.id == "notaryHost")     return (isLogical ? notary.getName() : notary.getHost());
+      else if (column.id == "notaryHTTPPort") return (isLogical ? "" : notary.getHTTPPort());
+      else if (column.id == "notarySSLPort")  return (isLogical ? "" : notary.getSSLPort());
     },  
 
     getCellValue: function(row, col) {
-      return notaries[row].getEnabled();
+      var notary    = getNotaryForRow(row);
+      var isLogical = (notary.parent == true);
+
+      return (isLogical ? notary.getEnabled() : false);
+      // return notaries[row].getEnabled();
     },
 
     setCellValue: function(row, col, val) {
-      notaries[row].setEnabled(val == "true");
-      update();
+      var notary    = getNotaryForRow(row);
+      var isLogical = (notary.parent == true);
+
+      if (isLogical) {
+	notary.setEnabled(val == "true");
+	update();
+      }
     },
 
     setTree: function(treebox){this.treebox = treebox; },  
-    isContainer: function(row){return false;},  
+
+    isContainer: function(row){
+      var notary = getNotaryForRow(row);
+      return (notary.parent == true)
+    },  
+
+    isContainerOpen: function(row) { return getNotaryForRow(row).open; },  
+    isContainerEmpty: function(idx) { return false; },  
     isSeparator: function(row){ return false; },  
     isSorted: function(){ return false; },  
     isEditable: function(row, column) {
       if (column.id == "notaryEnabled") return true;
       else                              return false;
     },
-    getLevel: function(row){ return 0; },  
+    getLevel: function(row){ 
+      return this.isContainer(row) ? 0 : 1;
+    },  
     getImageSrc: function(row,col){ return null; },  
     getRowProperties: function(row,props){},  
     getCellProperties: function(row,col,props){},  
-    getColumnProperties: function(colid,col,props){}  
+    getColumnProperties: function(colid,col,props){},
+    getParentIndex: function(index) {  
+      if (this.isContainer(index)) 
+	return -1;  
+
+      for (var t = index - 1; t >= 0 ; t--) {  
+	if (this.isContainer(t)) 
+	  return t;  
+      }  
+    }, 
+
+    hasNextSibling: function(index, after) {  
+      var thisLevel = this.getLevel(index);  
+      
+      for (var t = after + 1; t < this.rowCount; t++) {  
+	var nextLevel = this.getLevel(t);  
+	if (nextLevel == thisLevel) return true;  
+	if (nextLevel < thisLevel) break;  
+      }  
+
+      return false;  
+    },    
+
+    toggleOpenState: function(index) {
+      var notary  = getNotaryForRow(index);
+      notary.open = !(notary.open);
+      update();
+    }
+    
   };    
 }
 

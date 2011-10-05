@@ -26,7 +26,6 @@
 
 function SettingsManager() {
   this.enabled                      = true;
-  this.shortStatus                  = false;
   this.cacheCertificatesEnabled     = true;
   this.notaryBounceEnabled          = true;
   this.connectivityIsFailureEnabled = true;
@@ -162,12 +161,12 @@ SettingsManager.prototype.savePreferences = function() {
 
   var rootElement    = xmlDocument.createElement("convergence");
   rootElement.setAttribute("enabled", this.enabled);
-  rootElement.setAttribute("shortStatus", this.shortStatus);
   rootElement.setAttribute("cache_certificates", this.cacheCertificatesEnabled);
   rootElement.setAttribute("notary_bounce", this.notaryBounceEnabled);
   rootElement.setAttribute("connectivity_failure", this.connectivityIsFailureEnabled);
   rootElement.setAttribute("threshold", this.verificationThreshold);
-
+  rootElement.setAttribute("version", 1);
+  
   var notariesElement = xmlDocument.createElement("notaries");
   rootElement.appendChild(notariesElement);
 
@@ -217,10 +216,7 @@ SettingsManager.prototype.loadPreferences = function() {
   this.notaryBounceEnabled          = (rootElement.item(0).getAttribute("notary_bounce") == "true");
   this.connectivityIsFailureEnabled = (rootElement.item(0).getAttribute("connectivity_failure") == "true");
   this.verificationThreshold        = rootElement.item(0).getAttribute("threshold");
-
-  dump("Settings loaded threshold: " + this.verificationThreshold + "\n");
-
-  this.shortStatus                  = (rootElement.item(0).getAttribute("shortStatus") == "true");
+  this.version                      = rootElement.item(0).getAttribute("version");
 
   if (!rootElement.item(0).hasAttribute("cache_certificates")) {
     this.cacheCertificatesEnabled = true;
@@ -238,14 +234,24 @@ SettingsManager.prototype.loadPreferences = function() {
     this.verificationThreshold = "majority";
   }  
 
-  var notaryElements = settings.getElementsByTagName("notary");
+  if (!rootElement.item(0).hasAttribute("version")) {
+    this.version = 0;
+  }
+
+  var notaryElements;
+
+  if (this.version > 0) {
+    notaryElements = settings.getElementsByTagName("logical-notary");
+  } else {
+    notaryElements = settings.getElementsByTagName("notary");    
+  }
 
   for (var i=0;i<notaryElements.length;i++) {
     var element = notaryElements.item(i);
     element.QueryInterface(Components.interfaces.nsIDOMElement);
 
     var notary = new Notary();
-    notary.deserialize(element);
+    notary.deserialize(element, this.version);
 
     this.notaries.push(notary);
   }

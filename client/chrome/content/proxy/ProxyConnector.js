@@ -28,6 +28,18 @@ function ProxyConnector(proxyInfo) {
   this.port = proxyInfo.port;
 }
 
+ProxyConnector.prototype.makeMultiConnection = function(destinations) {
+  if (this.type == "http") {
+    var proxyConnector = new HttpProxyConnector();
+    return proxyConnector.makeMultiConnection(destinations);
+  } else if (this.type == "socks") {
+    var proxyConnector = new SOCKS5Connector();
+    return proxyConnector.makeMultiConnection(destinations);
+  } else {
+    throw "Unsupported proxy type: " + this.type;
+  }
+};
+
 ProxyConnector.prototype.makeConnection = function(destinationSocket, host, port) {
   if (this.type == "http") {
     var proxyConnector = new HttpProxyConnector();

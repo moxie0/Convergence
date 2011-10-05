@@ -22,7 +22,8 @@
  **/
 
 function SOCKS5Connector() {
-
+  this.base = BaseProxyConnector;
+  this.base();
 }
 
 SOCKS5Connector.prototype.sendClientHello = function(proxySocket) {
@@ -84,4 +85,14 @@ SOCKS5Connector.prototype.makeConnection = function(proxySocket, host, port) {
   this.readConnectResponse(proxySocket, host);
 
   return proxySocket;
+};
+
+SOCKS5Connector.prototype.sendMultiConnectRequest = function(clientSocket, host, port) {
+  this.sendClientHello(clientSocket);
+  this.readServerHello(clientSocket);
+  this.sendConnectRequest(clientSocket, host, port);
+};
+
+SOCKS5Connector.prototype.readMultiConnectResponse = function(clientSocket, host) {
+  return this.readConnectResponse(clientSocket, host);
 };

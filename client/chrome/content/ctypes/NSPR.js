@@ -128,6 +128,7 @@ NSPR.initialize = function(nsprPath) {
     PR_POLL_NVAL : 16,
 
     PR_WOULD_BLOCK_ERROR : -5998,
+    PR_IN_PROGRESS : -5934,
     PR_SockOpt_NoDelay : 13,
 
     buffer : ctypes.ArrayType(ctypes.char),
@@ -172,6 +173,17 @@ NSPR.initialize = function(nsprPath) {
     PR_GetError : sharedLib.declare("PR_GetError",
 				    ctypes.default_abi,
 				    ctypes.int),
+
+    PR_GetConnectStatus : sharedLib.declare("PR_GetConnectStatus",
+					    ctypes.default_abi,
+					    ctypes.int,
+					    NSPR.types.PRPollDesc.ptr),
+
+    PR_ConnectContinue : sharedLib.declare("PR_ConnectContinue",
+					   ctypes.default_abi,
+					   ctypes.int,
+					   NSPR.types.PRFileDesc.ptr,
+					   ctypes.int16_t),
 
     PR_Now : sharedLib.declare("PR_Now",
     			       ctypes.default_abi,

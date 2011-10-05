@@ -23,7 +23,12 @@
  *
  **/
 
-function ConvergenceDestinationSocket(host, port, proxy) {
+function ConvergenceClientSocket(host, port, proxy, fd) {
+  if (typeof fd != 'undefined') {
+    this.fd = fd;
+    return;
+  }
+
   var addrInfo = NSPR.lib.PR_GetAddrInfoByName(proxy == null ? host : proxy.host, 
 					       NSPR.lib.PR_AF_INET, 
 					       NSPR.lib.PR_AI_ADDRCONFIG);
@@ -71,7 +76,7 @@ function allGoodAuth(arg, fd, foo, bar) {
   return 0;
 }
 
-ConvergenceDestinationSocket.prototype.negotiateSSL = function() {
+ConvergenceClientSocket.prototype.negotiateSSL = function() {
   this.fd              = SSL.lib.SSL_ImportFD(null, this.fd);
   var callbackFunction = SSL.types.SSL_AuthCertificate(allGoodAuth);
   var status           = SSL.lib.SSL_AuthCertificateHook(this.fd, callbackFunction, null);
@@ -96,15 +101,15 @@ ConvergenceDestinationSocket.prototype.negotiateSSL = function() {
   return SSL.lib.SSL_PeerCertificate(this.fd);
 };
 
-ConvergenceDestinationSocket.prototype.available = function() {
+ConvergenceClientSocket.prototype.available = function() {
   return NSPR.lib.PR_Available(this.fd);
 };
 
-ConvergenceDestinationSocket.prototype.writeBytes = function(buffer, length) {
+ConvergenceClientSocket.prototype.writeBytes = function(buffer, length) {
   return NSPR.lib.PR_Write(this.fd, buffer, length);
 };
 
-ConvergenceDestinationSocket.prototype.readString = function() {
+ConvergenceClientSocket.prototype.readString = function() {
   var buffer = new NSPR.lib.buffer(4096);
   var read   = NSPR.lib.PR_Read(this.fd, buffer, 4095);
 
@@ -116,7 +121,7 @@ ConvergenceDestinationSocket.prototype.readString = function() {
   return buffer.readString();
 };
 
-ConvergenceDestinationSocket.prototype.readFully = function(length) {
+ConvergenceClientSocket.prototype.readFully = function(length) {
   var buffer = new NSPR.lib.buffer(length);
   var read   = NSPR.lib.PR_Read(this.fd, buffer, length);
 
@@ -127,6 +132,6 @@ ConvergenceDestinationSocket.prototype.readFully = function(length) {
   return buffer;
 };
 
-ConvergenceDestinationSocket.prototype.close = function() {
+ConvergenceClientSocket.prototype.close = function() {
   NSPR.lib.PR_Close(this.fd);
 };

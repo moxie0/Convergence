@@ -18,7 +18,7 @@
 /**
  * This ChromeWorker is responsible for two things:
  *
- * 1) Listening to the ServerSocket FD for incoming connection requests,
+ * 1) Listening to the ListenSocket FD for incoming connection requests,
  * which it then hands off to its parent.
  *
  * 2) Shuffling data between pairs of established SSL connections, 
@@ -31,8 +31,8 @@
 importScripts("chrome://convergence/content/ctypes/NSPR.js",
 	      "chrome://convergence/content/ctypes/NSS.js",
 	      "chrome://convergence/content/ctypes/SSL.js",
-	      "chrome://convergence/content/sockets/ConvergenceSocket.js",
 	      "chrome://convergence/content/sockets/ConvergenceServerSocket.js",
+	      "chrome://convergence/content/sockets/ConvergenceListenSocket.js",
 	      "chrome://convergence/content/ctypes/Serialization.js");
 
 const TYPE_INITIALIZE = 1;
@@ -59,7 +59,7 @@ ShuffleWorker.prototype.initializeDescriptors = function() {
   pollfds[connectionsLength].in_flags  = NSPR.lib.PR_POLL_READ;
   pollfds[connectionsLength].out_flags = 0;
 
-  pollfds[connectionsLength + 1].fd        = this.serverSocket.fd;
+  pollfds[connectionsLength + 1].fd        = this.listenSocket.fd;
   pollfds[connectionsLength + 1].in_flags  = NSPR.lib.PR_POLL_READ;
   pollfds[connectionsLength + 1].out_flags = 0;
 
@@ -76,7 +76,7 @@ ShuffleWorker.prototype.initialize = function(data) {
 
   this.buffer       = new NSPR.lib.buffer(4096);
   this.wakeup       = Serialization.deserializeDescriptor(data.fd);
-  this.serverSocket = new ConvergenceServerSocket(data.serverSocket);
+  this.listenSocket = new ConvergenceListenSocket(data.listenSocket);
 };
 
 ShuffleWorker.prototype.addConnection = function(data) {
@@ -145,7 +145,7 @@ ShuffleWorker.prototype.isAcceptEvent = function(flags) {
 };
 
 ShuffleWorker.prototype.handleAcceptEvent = function() {
-  var clientSocket = this.serverSocket.accept();
+  var clientSocket = this.listenSocket.accept();
   postMessage({'clientSocket' : clientSocket.serialize()});
 };
 

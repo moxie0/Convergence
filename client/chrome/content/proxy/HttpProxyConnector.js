@@ -23,24 +23,40 @@
 
 
 function HttpProxyConnector() {
-  
+  this.base = BaseProxyConnector;
+  this.base();
 }
 
-HttpProxyConnector.prototype.makeConnection = function(proxySocket, host, port) {
-  dump("Making HTTP proxy connection...\n");
-
-  var request = 
-  "CONNECT " + host + ":" + port + " HTTP/1.1\r\n" + 
-  "Host: " + host + "\r\n\r\n";
-
-  proxySocket.writeBytes(NSPR.lib.buffer(request), request.length);
-
+HttpProxyConnector.prototype.readResponse = function(proxySocket) {
   var headers = new ConnectResponseParser(proxySocket);
   
   if (headers.getResponseCode() != 200) {
     proxySocket.close();
     throw "Proxy connect failed! " + headers.getResponseCode();
   }
+};
+
+HttpProxyConnector.prototype.sendRequest = function(proxySocket, host, port) {
+  var request = 
+  "CONNECT " + host + ":" + port + " HTTP/1.1\r\n" + 
+  "Host: " + host + "\r\n\r\n";
+
+  proxySocket.writeBytes(NSPR.lib.buffer(request), request.length);
+};
+
+HttpProxyConnector.prototype.makeConnection = function(proxySocket, host, port) {
+  dump("Making HTTP proxy connection...\n");
+
+  this.sendRequest(proxySocket, host, port);
+  this.readResponse(proxySocket);
 
   return proxySocket;
+};
+
+HttpProxyConnector.prototype.sendMultiConnectRequest = function(clientSocket, host, port) {
+  this.sendRequest(clientSocket, host, port);
+};
+
+HttpProxyConnector.prototype.readMultiConnectResponse = function(clientSocket, host) {
+  return this.readResponse(clientSocket);
 };

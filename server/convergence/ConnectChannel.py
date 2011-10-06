@@ -38,3 +38,5 @@ class ConnectChannel(HTTPChannel):
         logging.debug("Connection lost from client: " + str(reason))
         if (self.proxyConnection is not None):
             self.proxyConnection.transport.loseConnection()
+
+        HTTPChannel.connectionLost(self, reason)

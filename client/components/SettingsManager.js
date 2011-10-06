@@ -31,7 +31,9 @@ function SettingsManager() {
   this.connectivityIsFailureEnabled = true;
   this.verificationThreshold        = "majority";
   this.notaries                     = new Array();
+
   this.loadPreferences();
+  this.upgradeIfNecessary();
 }
 
 SettingsManager.prototype.isEnabled = function() {
@@ -152,6 +154,30 @@ SettingsManager.prototype.getInputSettingsObject = function() {
   return object;
 };
 
+SettingsManager.prototype.removeOriginalNotaries = function() {
+  var removed = false;
+
+  for (var i=this.notaries.length-1;i>=0;i--) {
+    if((this.notaries[i].name == "notary.thoughtcrime.org") || 
+       (this.notaries[i].name == "notary2.thoughtcrime.org")) 
+    {
+      this.notaries.splice(i, 1);
+      removed = true;
+    }      
+  }
+
+  return removed;
+};
+
+SettingsManager.prototype.upgradeIfNecessary = function() {
+  if (this.version < 1) {
+    if (this.removeOriginalNotaries()) {
+      dump("Upgrading notaries\n");
+      this.notaries = this.getDefaultNotaryList().concat(this.notaries);
+    }
+  }
+};
+
 SettingsManager.prototype.savePreferences = function() {
   var outputStream = this.getSettingsOutputStream();
   var serializer   = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"]
@@ -180,24 +206,30 @@ SettingsManager.prototype.savePreferences = function() {
 };
 
 SettingsManager.prototype.getDefaultNotaryList = function() {
-  var notaryList = new Array();
-  var notaryOne  = new Notary();
-
+  var notaryList        = new Array();
+  var thoughtcrime      = new Notary();
+  var thoughtcrimeNodes = new Array();
+  
+  var notaryOne = new PhysicalNotary();
   notaryOne.setHost("notary.thoughtcrime.org");
   notaryOne.setSSLPort(443);
   notaryOne.setHTTPPort(80);
-  notaryOne.setEnabled(true);
   notaryOne.setCertificate("-----BEGIN CERTIFICATE-----\nMIIDkjCCAnoCCQCiafEhF0D5qzANBgkqhkiG9w0BAQUFADCBiTELMAkGA1UEBhMC\nVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBGcmFuY2lzY28x\nGjAYBgNVBAoTEVRob3VnaHRjcmltZSBMYWJzMQ8wDQYDVQQLEwZOb3RhcnkxIDAe\nBgNVBAMTF25vdGFyeS50aG91Z2h0Y3JpbWUub3JnMCAXDTExMDYyOTIwNTc0OVoY\nDzE5MTUwNTE0MTQyOTMzWjCBiTELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlm\nb3JuaWExFjAUBgNVBAcTDVNhbiBGcmFuY2lzY28xGjAYBgNVBAoTEVRob3VnaHRj\ncmltZSBMYWJzMQ8wDQYDVQQLEwZOb3RhcnkxIDAeBgNVBAMTF25vdGFyeS50aG91\nZ2h0Y3JpbWUub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt02q\nTwZFohBLbOPzo+DN+EMTYpF9l23lmGlKzoM3W2c7CCosZhg8bRscmzl0SOAALbVK\nRrogrqhghnv03psqb2oznyD16rrF6R2rhYOT/u9XPkuw+l5o11JFt5YSthLobTtt\n7BHGXcpHCtsd6rvZn/bWVg9s1cV+5Q+wZ8saDEJbKkt2MoswnzueP/cslAYOIeDs\nxXQHOiGMlNYG/RLHUw1ISFXmVGE2qq+riwTcneglngqjfi7AEnXjPsc++bnZ5aCe\nT168ViLrhyj2UYep+U30vuKyO26Nv/SJWSY2Ax/nGbr2COOCiFTAdkGJSsM+bmd9\n02BarFZqIbl+y/Iy+wIDAQABMA0GCSqGSIb3DQEBBQUAA4IBAQASDKkpnPMSfhAA\nnjvkNJFlFjYHGGZ1ZCFPEbyD7ABhSebT/yv33cw3bmO+1X0ZSQ11yAXBS7vIv8OR\nE8hOtvS6GHtwP3OYblYOW+aRNjPNqQ1xzuPvKo8MHZfSu8dBgCVUMzjYxg0vVNAl\nVh6pqDaLecNDjHdCTLOESycKuy9sd5nnI96zfy9PWk+4pesuUOqNPend17DyXB4J\nkETvCnMQfxH9LDg6dm+AtFCAfcdoQGzalwvKG8YIZbAYVS3/rZGa4oYbYcr15ae5\nRia17mALrWOZTMpXys2x+OfIc2lB/B56Wm9fLhQYfznCKXpHtrIhSE0N4tuTgu0s\nIY42yv8q\n-----END CERTIFICATE-----\n");
 
-  var notaryTwo = new Notary();
+  var notaryTwo = new PhysicalNotary();
   notaryTwo.setHost("notary2.thoughtcrime.org");
   notaryTwo.setSSLPort(443);
   notaryTwo.setHTTPPort(80);
-  notaryTwo.setEnabled(true);
   notaryTwo.setCertificate("-----BEGIN CERTIFICATE-----\nMIIDlDCCAnwCCQDVML1LmT7cuTANBgkqhkiG9w0BAQUFADCBijELMAkGA1UEBhMC\nVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBGcmFuY2lzY28x\nGjAYBgNVBAoTEVRob3VnaHRjcmltZSBMYWJzMQ8wDQYDVQQLEwZOb3RhcnkxITAf\nBgNVBAMTGG5vdGFyeTIudGhvdWdodGNyaW1lLm9yZzAgFw0xMTA2MjkyMDUyMjda\nGA8xOTE1MDUxNDE0MjQxMVowgYoxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxp\nZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMRowGAYDVQQKExFUaG91Z2h0\nY3JpbWUgTGFiczEPMA0GA1UECxMGTm90YXJ5MSEwHwYDVQQDExhub3RhcnkyLnRo\nb3VnaHRjcmltZS5vcmcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCx\nEMacdrL4/CM6BAekH0TA0ca4A694svZwdz8igwSuqlBpFTgkJ4iLgL0gizuQy1Iz\nhz5Xpp7Ucu83OeSxEc+RudcSJWi+3rV2RwdX9oDOlhy2XTFqxITWNM9PATBupSVo\n1pQfEh6mjB5BJmu5ISk6YB/wqGP7Tqkdh2OoimgUwfNaK/jon5GI7G3OWPivdFKT\nCUiQBm798NlChdlUu6+VSbFDX/2Nsu6dk2RP3oR4zYKFIOQ701gxfh4CugS+C/hx\n50D9BkSvUax7glq3aB3W3qwLMBiqY4xFoF+vybrU05ZLmYsBOl7hAnfHG/ArP75t\nkvyJE88GXqg4lJSP3/d5AgMBAAEwDQYJKoZIhvcNAQEFBQADggEBAEGsjvWJLMgI\nKqybiE+yGB6qBjGMnMDTdznLy0dNBGjBv122MgSSK9GWbrKK/5JIia66qMZ9qEVL\n1aV4E/cr0EQfBh5vJe+9K43WVpQ/fqZ/e+s7AfGCQE900svWRaLc9ZBCGxQ/R6+B\nDnPS3foxaS3kp8i+Jc0DA51/S/ErohR2J8iXMZrRJsGkyBe62CwQ5i4Ik9Z6WL3e\nfKZMCOvpl6u1V4ZumT6Em6KGR9USeeKfh0iKZf61/SJVxj07D7gxUqEBPIkI1BEL\nbOEOvOATvHEM4WqMi9eki5wsjyK7a5xJBwcnJoSzDdTHiXqiKD7NjVRKD1tId0Cp\nRhWdypCXL8c=\n-----END CERTIFICATE-----\n");
 
-  notaryList.push(notaryOne);
-  notaryList.push(notaryTwo);
+  thoughtcrimeNodes.push(notaryOne);
+  thoughtcrimeNodes.push(notaryTwo);
+
+  thoughtcrime.setName("Thoughtcrime Labs");
+  thoughtcrime.setEnabled(true);
+  thoughtcrime.setPhysicalNotaries(thoughtcrimeNodes);
+
+  notaryList.push(thoughtcrime);
 
   return notaryList;
 };

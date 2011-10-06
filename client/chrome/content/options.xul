@@ -20,11 +20,11 @@
 	    <treecols>
 	      <treecol id="notaryEnabled" label="Enabled" type="checkbox" editable="true" />
 	      <splitter class="tree-splitter" />
-	      <treecol id="notaryHost" label="Notary Hostname    " flex="1" editable="false" primary="true"/>
+	      <treecol id="notaryHost" label="Notary Hostname" flex="1" editable="false" primary="true"/>
 	      <splitter class="tree-splitter" />
-	      <treecol id="notaryHTTPPort" label="HTTP" flex="1" editable="false"/>
+	      <treecol id="notaryHTTPPort" label="HTTP" editable="false"/>
 	      <splitter class="tree-splitter" />
-	      <treecol id="notarySSLPort" label="SSL" flex="1" editable="false"/>
+	      <treecol id="notarySSLPort" label="SSL" editable="false"/>
 	    </treecols>
 	    <treechildren />  
 	  </tree>

@@ -225,12 +225,12 @@ Notary.prototype.serializeForTransport = function() {
 
 
 Notary.prototype.serialize = function(xmlDocument) {
-  var proxyElement = xmlDocument.createElement("notary");
+  var proxyElement = xmlDocument.createElement("logical-notary");
   proxyElement.setAttribute("name", this.name);
   proxyElement.setAttribute("enabled", this.enabled);
 
   for (var i=0;i<this.physicalNotaries.length;i++) {
-    var physicalElement = this.physicalNotaries[i].serialize();
+    var physicalElement = this.physicalNotaries[i].serialize(xmlDocument);
     proxyElement.appendChild(physicalElement);
   }
 

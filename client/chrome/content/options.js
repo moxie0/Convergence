@@ -195,7 +195,7 @@ function updateNotarySettings() {
 
       if (isLogical) {
 	notary.setEnabled(val == "true");
-	update();
+	// updateNotarySettings();
       }
     },
 
@@ -246,7 +246,7 @@ function updateNotarySettings() {
     toggleOpenState: function(index) {
       var notary  = getNotaryForRow(index);
       notary.open = !(notary.open);
-      update();
+      // updateNotarySettings();
     }
     
   };    

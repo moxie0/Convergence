@@ -112,7 +112,7 @@ PhysicalNotary.prototype.serializeForTransport = function() {
   return serialized;
 };
 
-PhysicalNotary.prototype.serialize = function() {
+PhysicalNotary.prototype.serialize = function(xmlDocument) {
   var proxyElement = xmlDocument.createElement("physical-notary");
   proxyElement.setAttribute("host", this.host);
   proxyElement.setAttribute("ssl-port", this.sslPort);

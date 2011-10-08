@@ -74,9 +74,11 @@ class ServerContextFactory:
         return ctx
 
 class NotaryConfig:
+    """ dummy class for configuration variables """
     pass
 
 def parseOptions(argv):
+    """ parse command line options and give back NotaryConfig object """
     cfg = NotaryConfig()
     cfg.logLevel          = logging.INFO
     cfg.logFile           = "/var/log/convergence.log"
@@ -136,6 +138,7 @@ def parseOptions(argv):
         sys.exit(2)
 
 def usage():
+    """ print usage message """
     print "\nnotary " + str(gVersion) + " by Moxie Marlinspike"
     print "usage: notary <options>\n"
     print "Options:"
@@ -157,11 +160,13 @@ def usage():
     print ""
 
 def initializeBackend(backend):
+    # TODO: make this soft-coded
     if   (backend == "perspective"): return NetworkPerspectiveVerifier()
     elif (backend == "google"):      return GoogleCatalogVerifier()
     else:                            raise getopt.GetoptError("Invalid backend: " + backend)
     
 def checkPrivileges(userName, groupName):                
+    """ check if given username and groupname are valid, if not exit program. """
     try:
         grp.getgrnam(groupName)
     except KeyError:
@@ -177,6 +182,7 @@ def checkPrivileges(userName, groupName):
         sys.exit(2)            
 
 def writePidFile(pidFileName):
+    """ try to write PID of process to file. Exit program on error. """
     try:
         pidFileHandle = open(pidFileName, "wb")
         pidFileHandle.write(str(os.getpid()))
@@ -186,13 +192,14 @@ def writePidFile(pidFileName):
         sys.exit(2)
     
 def dropPrivileges(userName, groupName, dbFile):
+    """ drop privileges to username, groupname and chown dbfile. """
     try:
-        user = pwd.getpwnam(userName)
+        user = pwd.getpwnam(config.userName)
     except KeyError:
-        print >> sys.stderr, 'User ' + userName + ' does not exist, cannot drop privileges'
+        print >> sys.stderr, 'User ' + config.userName + ' does not exist, cannot drop privileges'
         sys.exit(2)
     try:
-        group = grp.getgrnam(groupName)
+        group = grp.getgrnam(config.groupName)
     except KeyError:
         print >> sys.stderr, 'Group ' + groupName + ' does not exist, cannot drop privileges'
         sys.exit(2)
@@ -200,11 +207,11 @@ def dropPrivileges(userName, groupName, dbFile):
     logging.debug("dropping privileges to uid %u (%s) and gid %u (%s)" % 
                          (user.pw_uid, user.pw_name, 
                          group.gr_gid, group.gr_name))
-    if os.path.exists(os.path.dirname(dbFile)):
-        os.chown(os.path.dirname(dbFile), user.pw_uid, group.gr_gid)
+    if os.path.exists(os.path.dirname(config.dbFile)):
+        os.chown(os.path.dirname(config.dbFile), user.pw_uid, group.gr_gid)
 
-    if os.path.exists(dbFile):
-        os.chown(dbFile, user.pw_uid, group.gr_gid)
+    if os.path.exists(config.dbFile):
+        os.chown(config.dbFile, user.pw_uid, group.gr_gid)
 
     os.setgroups([group.gr_gid])
 
@@ -212,6 +219,7 @@ def dropPrivileges(userName, groupName, dbFile):
     os.setuid(user.pw_uid)
 
 def initializeLogging(logLevel, logFile):
+    """ start logging object with given loglevel and logfile. Write starting message to logfile. """
     logging.basicConfig(filename=logFile,level=logLevel, 
                         format='%(asctime)s %(message)s',filemode='a')        
 
@@ -227,7 +235,13 @@ def initializeDatabase(dbFile):
     return adbapi.ConnectionPool("sqlite3", dbFile, cp_max=1, cp_min=1)
 
 def initializeKey(keyFile):
-    return open(keyFile,'r').read() 
+    """ return contents of keyfile. exit program on error. """
+    try:
+        key = open(keyFile,'r').read()
+    except IOError as err:
+        print "Could not read keyfile %s: %s" % (keyFile, err)
+        sys.exit(2)
+    return key
 
 def main(argv):
     cfg = parseOptions(argv)

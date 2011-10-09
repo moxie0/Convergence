@@ -58,7 +58,6 @@ from twisted.internet import reactor
 import sys, string, os, getopt, logging, pwd, grp, convergence.daemonize
 
 gVersion                  = "0.2"
-CONVERGENCE_DATABASE_PATH = '/var/lib/convergence/convergence.db'
 
 class ServerContextFactory:
 
@@ -74,76 +73,100 @@ class ServerContextFactory:
 
         return ctx
 
+class NotaryConfig:
+    """ dummy class for configuration variables """
+    pass
+
 def parseOptions(argv):
-    logLevel          = logging.INFO
-    httpPort          = 80
-    sslPort           = 443
-    incomingInterface = ''
-    certFile          = "/etc/ssl/certs/convergence.pem"
-    keyFile           = "/etc/ssl/private/convergence.key"
-    uname             = "nobody"
-    gname             = "nogroup"
-    verifier          = NetworkPerspectiveVerifier();
-    background        = True
+    """ parse command line options and give back NotaryConfig object """
+    cfg = NotaryConfig()
+    cfg.logLevel          = logging.INFO
+    cfg.logFile           = "/var/log/convergence.log"
+    cfg.dbFile            = "/var/lib/convergence/convergence.db"
+    cfg.pidFile           = "/var/run/convergence.pid"
+    cfg.httpPort          = 80
+    cfg.sslPort           = 443
+    cfg.incomingInterface = ''
+    cfg.certFile          = "/etc/ssl/certs/convergence.pem"
+    cfg.keyFile           = "/etc/ssl/private/convergence.key"
+    cfg.userName          = "nobody"
+    cfg.groupName         = "nogroup"
+    cfg.dropPrivileges    = True
+    cfg.verifier          = NetworkPerspectiveVerifier()
+    cfg.background        = True
 
     try:
-        opts, args = getopt.getopt(argv, "s:p:i:o:c:k:u:g:b:fdh")
-
+        opts, args = getopt.getopt(argv, "s:p:i:o:c:k:u:g:b:l:D:P:dfh", "no-drop-privileges")
         for opt, arg in opts:
-            if opt in("-p"):
-                httpPort = int(arg)
+            if opt in ("-p"):
+                cfg.httpPort = int(arg)
             elif opt in ("-s"):
-                sslPort = int(arg)
+                cfg.sslPort = int(arg)
             elif opt in ("-i"):
-                incomingInterface = arg
+                cfg.incomingInterface = arg
             elif opt in ("-c"):
-                certFile = arg
+                cfg.certFile = arg
             elif opt in ("-k"):
-                keyFile = arg
+                cfg.keyFile = arg
             elif opt in ("-u"):
-                uname = arg
+                cfg.userName = arg
+            elif opt == '--no-drop-privileges':
+                cfg.dropPrivileges = False
             elif opt in ("-g"):
-                gname = arg
+                cfg.groupName = arg
             elif opt in ("-d"):
-                logLevel = logging.DEBUG
+                cfg.logLevel = logging.DEBUG
             elif opt in ("-f"):
-                background = False
+                cfg.background = False
             elif opt in ("-b"):
-                verifier = initializeBackend(arg)
+                cfg.verifier = initializeBackend(arg)
+            elif opt in ("-l"):
+                cfg.logFile = arg
+            elif opt in ("-D"):
+                cfg.dbFile = arg
+            elif opt in ("-P"):
+                cfg.pidFile= arg
             elif opt in ("-h"):
                 usage()
                 sys.exit()
         
-        return (logLevel, sslPort, httpPort, certFile, keyFile,
-                uname, gname, background, incomingInterface, verifier)
+        return cfg
 
-    except getopt.GetoptError:
+    except getopt.GetoptError as error:
+        print "Option error: %s" % error
         usage()
         sys.exit(2)
 
 def usage():
+    """ print usage message """
     print "\nnotary " + str(gVersion) + " by Moxie Marlinspike"
     print "usage: notary <options>\n"
     print "Options:"
-    print "-p <http_port> HTTP port to listen on (default 80)."
-    print "-s <ssl_port>  SSL port to listen on (default 443)."
-    print "-i <address>   IP address to listen on for incoming connections (optional)."
-    print "-c <cert>      SSL certificate location."
-    print "-k <key>       SSL private key location."
-    print "-u <username>  Name of user to drop privileges to (defaults to 'nobody')"
-    print "-g <group>     Name of group to drop privileges to (defaults to 'nogroup')"
-    print "-b <backend>   Verifier backend [perspective|google] (defaults to 'perspective')"
-    print "-f             Run in foreground."
-    print "-d             Debug mode."
-    print "-h             Print this help message."
+    print "-p <http_port>        HTTP port to listen on (default 80)."
+    print "-s <ssl_port>         SSL port to listen on (default 443)."
+    print "-i <address>          IP address to listen on for incoming connections (optional)."
+    print "-c <cert>             SSL certificate location."
+    print "-k <key>              SSL private key location."
+    print "-u <username>         Name of user to drop privileges to (defaults to 'nobody')"
+    print "-g <group>            Name of group to drop privileges to (defaults to 'nogroup')"
+    print "-b <backend>          Verifier backend [perspective|google] (defaults to 'perspective')"
+    print "-l <logfile>          Path to logfile"
+    print "-D <database>         Path to database"
+    print "-P <pidfile>          Path to PID-file"
+    print "--no-drop-privileges  Don't drop privileges"
+    print "-f                    Run in foreground."
+    print "-d                    Debug mode."
+    print "-h                    Print this help message."
     print ""
 
 def initializeBackend(backend):
+    # TODO: make this soft-coded
     if   (backend == "perspective"): return NetworkPerspectiveVerifier()
     elif (backend == "google"):      return GoogleCatalogVerifier()
     else:                            raise getopt.GetoptError("Invalid backend: " + backend)
     
 def checkPrivileges(userName, groupName):                
+    """ check if given username and groupname are valid, if not exit program. """
     try:
         grp.getgrnam(groupName)
     except KeyError:
@@ -158,32 +181,46 @@ def checkPrivileges(userName, groupName):
               'because it does not exist!' % userName
         sys.exit(2)            
 
-def writePidFile():
-    pidFile = open("/var/run/convergence.pid", "wb")
-    pidFile.write(str(os.getpid()))
-    pidFile.close()
-    
-def dropPrivileges(userName, groupName):
+def writePidFile(pidFileName):
+    """ try to write PID of process to file. Exit program on error. """
     try:
-        user = pwd.getpwnam(userName)
+        pidFileHandle = open(pidFileName, "wb")
+        pidFileHandle.write(str(os.getpid()))
+        pidFileHandle.close()
+    except IOError as error:
+        print "Error occurred while writing PID-file: %s" % error
+        sys.exit(2)
+    
+def dropPrivileges(userName, groupName, dbFile):
+    """ drop privileges to username, groupname and chown dbfile. """
+    try:
+        user = pwd.getpwnam(config.userName)
     except KeyError:
-        print >> sys.stderr, 'User ' + userName + ' does not exist, cannot drop privileges'
+        print >> sys.stderr, 'User ' + config.userName + ' does not exist, cannot drop privileges'
         sys.exit(2)
     try:
-        group = grp.getgrnam(groupName)
+        group = grp.getgrnam(config.groupName)
     except KeyError:
         print >> sys.stderr, 'Group ' + groupName + ' does not exist, cannot drop privileges'
         sys.exit(2)
 
-    os.chown(os.path.dirname(CONVERGENCE_DATABASE_PATH), user.pw_uid, group.gr_gid)
-    os.chown(CONVERGENCE_DATABASE_PATH, user.pw_uid, group.gr_gid)
-    
+    logging.debug("dropping privileges to uid %u (%s) and gid %u (%s)" % 
+                         (user.pw_uid, user.pw_name, 
+                         group.gr_gid, group.gr_name))
+    if os.path.exists(os.path.dirname(config.dbFile)):
+        os.chown(os.path.dirname(config.dbFile), user.pw_uid, group.gr_gid)
+
+    if os.path.exists(config.dbFile):
+        os.chown(config.dbFile, user.pw_uid, group.gr_gid)
+
     os.setgroups([group.gr_gid])
+
     os.setgid(group.gr_gid)
     os.setuid(user.pw_uid)
 
-def initializeLogging(logLevel):
-    logging.basicConfig(filename="/var/log/convergence.log",level=logLevel, 
+def initializeLogging(logLevel, logFile):
+    """ start logging object with given loglevel and logfile. Write starting message to logfile. """
+    logging.basicConfig(filename=logFile,level=logLevel, 
                         format='%(asctime)s %(message)s',filemode='a')        
 
     logging.info("Convergence Notary started...")
@@ -194,42 +231,48 @@ def initializeFactory(database, privateKey, verifier):
 
     return Site(root)    
 
-def initializeDatabase():
-    return adbapi.ConnectionPool("sqlite3", CONVERGENCE_DATABASE_PATH, cp_max=1, cp_min=1)
+def initializeDatabase(dbFile):
+    return adbapi.ConnectionPool("sqlite3", dbFile, cp_max=1, cp_min=1)
 
 def initializeKey(keyFile):
-    return open(keyFile,'r').read() 
+    """ return contents of keyfile. exit program on error. """
+    try:
+        key = open(keyFile,'r').read()
+    except IOError as err:
+        print "Could not read keyfile %s: %s" % (keyFile, err)
+        sys.exit(2)
+    return key
 
 def main(argv):
-    (logLevel, sslPort, httpPort,
-     certFile, keyFile, userName,
-     groupName, background,
-     incomingInterface, verifier) = parseOptions(argv)
-    privateKey                    = initializeKey(keyFile)
-    database                      = initializeDatabase()
-    sslFactory                    = initializeFactory(database, privateKey, verifier)
+    cfg = parseOptions(argv)
+    privateKey                    = initializeKey(cfg.keyFile)
+    database                      = initializeDatabase(cfg.dbFile)
+    sslFactory                    = initializeFactory(database, privateKey, cfg.verifier)
     connectFactory                = http.HTTPFactory(timeout=10)
     connectFactory.protocol       = ConnectChannel
-    
-    reactor.listenSSL(sslPort, sslFactory, ServerContextFactory(certFile, keyFile),
-                      interface=incomingInterface)
-    reactor.listenSSL(4242, sslFactory, ServerContextFactory(certFile, keyFile),
-                      interface=incomingInterface)
-    reactor.listenTCP(port=httpPort, factory=connectFactory,
-                      interface=incomingInterface)
-        
-    initializeLogging(logLevel)
-    checkPrivileges(userName, groupName)
 
-    if background:
+    
+    reactor.listenSSL(cfg.sslPort, sslFactory, ServerContextFactory(cfg.certFile, cfg.keyFile),
+                      interface=cfg.incomingInterface)
+    reactor.listenSSL(4242, sslFactory, ServerContextFactory(cfg.certFile, cfg.keyFile),
+                      interface=cfg.incomingInterface)
+    reactor.listenTCP(port=cfg.httpPort, factory=connectFactory,
+                      interface=cfg.incomingInterface)
+        
+
+    initializeLogging(cfg.logLevel, cfg.logFile)
+    checkPrivileges(cfg.userName, cfg.groupName)
+
+    if cfg.background:
         print "\nconvergence " + str(gVersion) + " by Moxie Marlinspike backgrounding..."
         convergence.daemonize.createDaemon()
     else:
         print "\nconvergence " + str(gVersion) + " by Moxie Marlinspike running..."
-
-    writePidFile()
-    dropPrivileges(userName, groupName)
-
+    
+    logging.debug("writing PID-file to %s" % os.path.abspath(cfg.pidFile))
+    writePidFile(cfg.pidFile)
+    if cfg.dropPrivileges:
+        dropPrivileges(cfg.userName, cfg.groupName, cfg.dbFile)
     reactor.run()
 
 if __name__ == '__main__':

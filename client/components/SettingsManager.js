@@ -85,6 +85,13 @@ SettingsManager.prototype.setNotaryList = function(notaries) {
 };
 
 SettingsManager.prototype.addNotary = function(notary) {
+  for (var i=0;i<this.notaries.length;i++) {
+    if (this.notaries[i].getName() == notary.getName()) {
+      dump("Duplicate notary!\n");
+      return;
+    }
+  }
+
   this.notaries.append(notary);
 };
 

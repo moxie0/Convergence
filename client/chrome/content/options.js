@@ -77,6 +77,13 @@ function onAddNotary() {
   window.openDialog("chrome://convergence/content/addNotary.xul", "dialog2", "modal", retVal).focus();
 
   if (retVal.notary) {
+    for (var i=0;i<notaries.length;i++) {
+      if (notaries[i].getName() == retVal.notary.getName()) {
+	dump("Found duplicate: " + notaries[i].getName()+ "\n");
+	return;
+      }
+    }
+
     notaries.push(retVal.notary);
     updateNotarySettings();
   }

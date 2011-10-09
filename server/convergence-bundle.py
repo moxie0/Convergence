@@ -24,49 +24,7 @@ USA
 
 """
 
-import sys, getopt
-
-def parseOptions(argv):
-    httpPort   = 80
-    sslPort    = 443
-    notaryName = "notary.example.com"
-    certFile   = "/etc/ssl/certs/convergence.pem"
-    outputFile = "mynotarybundle.notary"
-
-    try:
-        opts, args = getopt.getopt(argv, "p:s:n:c:o:h")
-
-        for opt, arg in opts:
-            if opt in("-p"):
-                httpPort = int(arg)
-            elif opt in ("-s"):
-                sslPort = int(arg)
-            elif opt in ("-n"):
-                notaryName = arg
-            elif opt in ("-c"):
-                certFile = arg
-            elif opt in ("-o"):
-                outputFile = arg
-            elif opt in ("-h"):
-                usage()
-                sys.exit()
-
-        return (httpPort, sslPort, notaryName, certFile, outputFile)
-
-    except getopt.GetoptError:
-        usage()
-        sys.exit(2)
-
-def usage():
-    print "usage: bundle <options>\n"
-    print "Options:"
-    print "-p <http_port> HTTP port your notary is listening on (default: 80)."
-    print "-s <ssl_port>  SSL port your notary is listening on (default: 443)."
-    print "-n <hostname>  Notary hostname (default: notary.thoughtcrime.org)."
-    print "-c <cert>      SSL cert (default: /etc/ssl/certs/convergence.pem)."
-    print "-o <outfile>   Notary bundle file (default: mynotarybundle.notary)."
-    print "-h             Print this help message."
-    print ""
+import sys, getopt, textwrap, json
 
 def loadCertificate(path):
     fd       = open(path, "r")
@@ -75,21 +33,77 @@ def loadCertificate(path):
 
     return contents
 
+def loopingPrompt(message):
+    value = ""
+    while value == "":
+        value = raw_input(message).strip()
+
+    return value
+
+def promptForLogicalInfo():
+    bundle = {"name" : "", "hosts" : [], "version" : 1}
+    
+    print "\n" + textwrap.fill("A notary is a 'logical' entity that represents an " \
+                                 "arbitrary number of physical hosts.  To create a " \
+                                 "notary bundle, this script will prompt you for general " \
+                                 "information about the logical notary entity, and then for " \
+                                 "information about the physical notary hosts.", 78)
+
+
+    print "\n\n" + textwrap.fill("First, please enter the name of the entity managing this notary. " \
+                                 "For an individual, this would be an individual's " \
+                                 "name (eg: John Smith). For an organization, this " \
+                                 "would be the organization's name (eg: Acme): ", 78) + "\n"
+
+    bundle['name'] = loopingPrompt("Notary name: ")
+
+    return bundle
+    
+def promptForPhysicalInfo(count):
+    print "\n" + textwrap.fill("Please enter the hostname for physical host #" + str(count) +
+                               " (eg: notary" + str(count) + ".thoughtcrime.org), or leave empty " \
+                               "if there are no more hosts.", 78) + "\n"
+    host = raw_input("Hostname: ").strip()
+    
+    if len(host.strip()) == 0:
+        return None
+    
+    sslPort         = int(loopingPrompt(textwrap.fill(host + " SSL listen port (eg: 443):", 78) + " "))
+    httpPort        = int(loopingPrompt(textwrap.fill(host + " HTTP listen port (eg: 80):", 78) + " "))
+    certificatePath = loopingPrompt(textwrap.fill("Path to PEM encoded certificate for "
+                                                  + host + ":", 78) + " ")
+    certificate     = loadCertificate(certificatePath)
+    count          += 1
+    
+    return {"host" : host, "ssl_port" : sslPort, "http_port" : httpPort, "certificate" : certificate}
+
+def promptForBundleInfo():
+    count  = 1    
+    bundle = promptForLogicalInfo()
+
+    while True:
+        host = promptForPhysicalInfo(count)
+
+        if host is not None:
+            bundle['hosts'].append(host)
+        else:
+            break
+        
+        count = count + 1
+    
+    return bundle
+
+def writeBundle(bundle):
+    bundleFile = open("mynotarybundle.notary", "w")
+    bundleFile.write(json.dumps(bundle))
+    bundleFile.close()
+
+    print "\n\nBundle saved in 'mynotarybundle.notary'"
+
+
 def main(argv):
-    (httpPort, sslPort, notaryName,
-     certFile, outputFile) = parseOptions(argv)
-
-    certificate     = loadCertificate(certFile)
-
-    bundle = open(outputFile, "w")
-    bundle.write('{\n'\
-                 '"host" : "' + notaryName + '",\n'\
-                 '"ssl_port" : ' + str(sslPort) + ',\n'\
-                 '"http_port" : ' + str(httpPort) + ',\n'\
-                 '"certificate" : "' + certificate + '"\n}')
-    bundle.close()
-
-    print "Bundle generated in %s" % outputFile
+    bundle = promptForBundleInfo()
+    writeBundle(bundle)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

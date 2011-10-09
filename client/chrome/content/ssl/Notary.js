@@ -261,20 +261,7 @@ Notary.prototype.deserialize = function(logicalElement, version) {
   }
 };
 
-Notary.constructFromBundle = function(bundlePath) {
-  Components.utils.import("resource://gre/modules/NetUtil.jsm");
-
-  var file = Components.classes["@mozilla.org/file/local;1"]
-             .createInstance(Components.interfaces.nsILocalFile);
-  file.initWithPath(bundlePath);
-
-  var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"]
-                    .createInstance(Components.interfaces.nsIFileInputStream);
-  inputStream.init(file, -1, 0, 0);
-  
-  var notaryBytes        = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-  var notaryJson         = JSON.parse(notaryBytes);
-
+Notary.constructFromV1Json = function(notaryJson) {
   var notary               = new Notary();
   var physicalNotaries     = new Array();
   var physicalNotariesJson = notaryJson.hosts;
@@ -289,9 +276,54 @@ Notary.constructFromBundle = function(bundlePath) {
     physicalNotaries.push(physicalNotary);
   }
 
-  notary.setName(notaryJson.name)
+  notary.setName(notaryJson.name);
   notary.setEnabled(true);
   notary.setPhysicalNotaries(physicalNotaries);
+  
+  return notary;
+};
+
+Notary.constructFromV0Json = function(notaryJson) {
+  var notary             = new Notary();
+  var physicalNotary     = new PhysicalNotary();
+  var physicalNotaryList = new Array();
+
+  physicalNotary.setHost(notaryJson.host);
+  physicalNotary.setSSLPort(notaryJson.ssl_port);
+  physicalNotary.setHTTPPort(notaryJson.http_port);
+  physicalNotary.setCertificate(notaryJson.certificate);
+  physicalNotaryList.push(physicalNotary);
+
+  notary.setName(notaryJson.host);
+  notary.setEnabled(true);
+  notary.setPhysicalNotaries(physicalNotaryList);
 
   return notary;
+};
+
+Notary.constructFromBundle = function(bundlePath) {
+  Components.utils.import("resource://gre/modules/NetUtil.jsm");
+
+  var file = Components.classes["@mozilla.org/file/local;1"]
+             .createInstance(Components.interfaces.nsILocalFile);
+  file.initWithPath(bundlePath);
+
+  var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"]
+                    .createInstance(Components.interfaces.nsIFileInputStream);
+  inputStream.init(file, -1, 0, 0);
+  
+  var notaryBytes = NetUtil.readInputStreamToString(inputStream, inputStream.available());
+  var notaryJson  = JSON.parse(notaryBytes);
+
+  if ((typeof notaryJson.version == 'undefined') || 
+      (notaryJson.version == 0)) 
+  {
+    return Notary.constructFromV0Json(notaryJson);
+  } else if (notaryJson.version == 1) {
+    return Notary.constructFromV1Json(notaryJson);    
+  } else {
+    var exception = new Object();
+    exception.version = notaryJson.version;
+    throw exception;
+  }
 };

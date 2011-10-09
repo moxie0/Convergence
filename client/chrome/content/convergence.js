@@ -113,7 +113,15 @@ var Convergence = {
   },
 
   addNotaryFromFile: function(path) {
-    var notary          = convergenceManager.getNewNotaryFromBundle(path);
+    var notary;
+
+    try {
+      notary = convergenceManager.getNewNotaryFromBundle(path);
+    } catch (exception) {
+      alert("Unknown Notary bundle version: " + exception.version + "!");
+      return;
+    }
+
     var settingsManager = convergenceManager.getSettingsManager();
 
     var promptService   = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]

@@ -48,7 +48,14 @@ function handleLocalNotaryBundle(bundlePath) {
                     .getService().wrappedJSObject;
 
   var retvalue    = window.arguments[0];
-  retvalue.notary = convergence.getNewNotaryFromBundle(bundlePath);
+
+  try {
+    retvalue.notary = convergence.getNewNotaryFromBundle(bundlePath);
+  } catch (exception) {
+    dump("Got exception: " + exception + " , " + exception.stack + "\n");
+    alert("Unknown Notary bundle version: " + exception.version + "!");
+    return false;
+  }
 
   return true;
 };

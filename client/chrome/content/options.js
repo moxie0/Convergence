@@ -53,27 +53,41 @@ function onOptionsSave() {
 }
 
 function onRemoveNotary() {
-  var tree = getNotaryTree();
-  notaries.splice(tree.currentIndex, 1);
-  updateNotarySettings();
-}
+  var tree        = getNotaryTree();
+  var row         = tree.currentIndex;
+  var parentIndex = tree.view.getParentIndex(row);
 
-function onEditNotary() {
-  var tree   = getNotaryTree();
-  var notary = notaries[tree.currentIndex];
-  var retVal = {notary: notary};
+  if (parentIndex != -1)
+    row = parentIndex;
+  
+  var selectedNotary = getNotaryForRow(row);
+  
+  for (var i=0;i<notaries.length;i++) {
+    if (notaries[i] == selectedNotary) {
+      notaries.splice(i, 1);
+      break;
+    }
+  }
 
-  window.openDialog("chrome://convergence/content/addEditNotary.xul", "dialog2", "modal", retVal);
   updateNotarySettings();
 }
 
 function onAddNotary() {
   var retVal = {notary: null};
-  window.openDialog("chrome://convergence/content/addEditNotary.xul", "dialog2", "modal", retVal).focus();
+  window.openDialog("chrome://convergence/content/addNotary.xul", "dialog2", "modal", retVal).focus();
 
   if (retVal.notary) {
     notaries.push(retVal.notary);
     updateNotarySettings();
+  }
+}
+
+function onTreeSelected() {
+  var tree        = document.getElementById("notaryTree");
+  var parentIndex = tree.view.getParentIndex(tree.currentIndex);
+
+  if (parentIndex != -1) {
+    tree.view.selection.select(parentIndex);
   }
 }
 
@@ -186,7 +200,6 @@ function updateNotarySettings() {
       var isLogical = (notary.parent == true);
 
       return (isLogical ? notary.getEnabled() : false);
-      // return notaries[row].getEnabled();
     },
 
     setCellValue: function(row, col, val) {
@@ -195,7 +208,6 @@ function updateNotarySettings() {
 
       if (isLogical) {
 	notary.setEnabled(val == "true");
-	// updateNotarySettings();
       }
     },
 
@@ -246,7 +258,6 @@ function updateNotarySettings() {
     toggleOpenState: function(index) {
       var notary  = getNotaryForRow(index);
       notary.open = !(notary.open);
-      // updateNotarySettings();
     }
     
   };    

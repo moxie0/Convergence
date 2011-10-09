@@ -113,42 +113,21 @@ var Convergence = {
   },
 
   addNotaryFromFile: function(path) {
-    var file = Components.classes["@mozilla.org/file/local;1"]
-    .createInstance(Components.interfaces.nsILocalFile);	
-    file.initWithPath(path);
+    var notary          = convergenceManager.getNewNotaryFromBundle(path);
+    var settingsManager = convergenceManager.getSettingsManager();
 
-    var convergenceManager = this.convergenceManager;
+    var promptService   = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
+                          .getService(Components.interfaces.nsIPromptService);
 
-    NetUtil.asyncFetch(file, function(inputStream, status) {
-	if (!Components.isSuccessCode(status)) {
-	  return;
-	}
-	 
-	var data          = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-	var notaryObject  = JSON.parse(data);
-	var promptService = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
-	.getService(Components.interfaces.nsIPromptService);
+    var status          = promptService.confirm(null, "Trust This Notary?", 
+						"Are you sure that you would like to trust this notary: \n\n" +
+						notary.name + "\n\n" +
+						"...to verify the authenticity of your secure communication?");
 
-	var status        = promptService.confirm(null, "Trust This Notary?", 
-						  "Are you sure that you would like to trust this notary: \n\n" +
-						  notaryObject.host + "\n\n" +
-						  "To verify the authenticity of your secure communication?");
-	
-	if (status) {
-	  var notaryList = convergenceManager.getSettingsManager().getNotaryList();
-	  var notary     = convergenceManager.getNewNotary();
-
-	  notary.setHost(notaryObject.host);
-	  notary.setSSLPort(notaryObject.ssl_port);
-	  notary.setHTTPPort(notaryObject.http_port);
-	  notary.setCertificate(notaryObject.certificate);
-	  notary.setEnabled(true);
-
-	  notaryList.push(notary);
-	  convergenceManager.getSettingsManager().setNotaryList(notaryList);
-	  convergenceManager.getSettingsManager().savePreferences();
-	}
-      });
+    if (status) {
+      settingsManager.addNotary(notary);
+      settingsManager.savePreferences();
+    }
   },
 
   observe: function(subject, topic, data) {

@@ -154,6 +154,10 @@ Convergence.prototype = {
     return new Notary();
   },
 
+  getNewNotaryFromBundle: function(bundlePath) {
+    return Notary.constructFromBundle(bundlePath);
+  },
+
   getSettingsManager: function() {
     return this.settingsManager;
   },

@@ -16,7 +16,7 @@
       <vbox flex="1">
 	<hbox flex="1">
 
-	  <tree id="notaryTree" align="stretch" flex="1" editable="true">
+	  <tree id="notaryTree" onclick="onTreeSelected();" align="stretch" flex="1" editable="true">
 	    <treecols>
 	      <treecol id="notaryEnabled" label="Enabled" type="checkbox" editable="true" />
 	      <splitter class="tree-splitter" />
@@ -32,7 +32,7 @@
 	  <separator />
 	  <vbox flex="0">
 	    <button id="add-notary-button" pack="start" label="Add Notary" onclick="onAddNotary();" />
-	    <button id="edit-notary-button" pack="start" label="Edit Notary" onclick="onEditNotary();" />
+<!--	    <button id="edit-notary-button" pack="start" label="Edit Notary" onclick="onEditNotary();" /> -->
 	    <button id="remove-notary-button" pack="start" label="Remove Notary" onclick="onRemoveNotary();"/>
 	  </vbox>
 	</hbox>

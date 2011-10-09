@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<dialog buttons="accept,cancel" id="convergence-add-notary" 
+	ondialogaccept="return onDialogOK();"
+	onload="onDialogLoad();" title="Manually Add Notary" 
+	width="615" height="230"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+<script src="addNotary.js" />
+
+<vbox>
+      <hbox>
+	<label style="font-weight: bold;" value="Add a Convergence Notary of your choice:" />
+      </hbox>
+
+      <separator />
+
+      <grid>
+      	    <columns>
+		<column/>
+		<column flex="1" />
+	    </columns>
+
+	    <rows>
+		<row align="center">
+		     <label value="Select local .notary bundle:" />
+		     <hbox>
+			<textbox id="notary-local" flex="1" />
+		     	<button id="notary-browse" pack="start" label="Browse" onclick="onBrowse();"/>
+		     </hbox>
+		</row>
+
+		<label style="text-align: center; font-weight: bold;" value="Or" flex="1" />
+
+		<row align="center">
+		     <label value="Enter remote .notary URL:" />
+		     <textbox id="notary-remote" flex="1" />
+		</row>
+	      </rows>
+     </grid>
+<separator />
+</vbox>
+</dialog>	

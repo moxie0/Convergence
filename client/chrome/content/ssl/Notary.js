@@ -259,4 +259,39 @@ Notary.prototype.deserialize = function(logicalElement, version) {
     physicalNotary.deserialize(logicalElement);
     this.physicalNotaries.push(physicalNotary);
   }
-}
+};
+
+Notary.constructFromBundle = function(bundlePath) {
+  Components.utils.import("resource://gre/modules/NetUtil.jsm");
+
+  var file = Components.classes["@mozilla.org/file/local;1"]
+             .createInstance(Components.interfaces.nsILocalFile);
+  file.initWithPath(bundlePath);
+
+  var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"]
+                    .createInstance(Components.interfaces.nsIFileInputStream);
+  inputStream.init(file, -1, 0, 0);
+  
+  var notaryBytes        = NetUtil.readInputStreamToString(inputStream, inputStream.available());
+  var notaryJson         = JSON.parse(notaryBytes);
+
+  var notary               = new Notary();
+  var physicalNotaries     = new Array();
+  var physicalNotariesJson = notaryJson.hosts;
+
+  for (var i=0;i<physicalNotariesJson.length;i++) {
+    var physicalNotary = new PhysicalNotary();
+    physicalNotary.setHost(physicalNotariesJson[i].host);
+    physicalNotary.setHTTPPort(physicalNotariesJson[i].http_port);
+    physicalNotary.setSSLPort(physicalNotariesJson[i].ssl_port);
+    physicalNotary.setCertificate(physicalNotariesJson[i].certificate);
+
+    physicalNotaries.push(physicalNotary);
+  }
+
+  notary.setName(notaryJson.name)
+  notary.setEnabled(true);
+  notary.setPhysicalNotaries(physicalNotaries);
+
+  return notary;
+};

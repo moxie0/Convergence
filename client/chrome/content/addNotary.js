@@ -1,5 +1,4 @@
 // Copyright (c) 2011 Moxie Marlinspike <moxie@thoughtcrime.org>
-
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 3 of the
@@ -32,16 +31,6 @@ function onBrowse() {
   }
 }
 
-function getTemporaryFile() {
-  var file = Components.classes["@mozilla.org/file/directory_service;1"]
-             .getService(Components.interfaces.nsIProperties)
-             .get("TmpD", Components.interfaces.nsIFile);
-
-  file.append("notary.tmp");
-  file.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0644);
-
-  return file;
-}
 
 function handleLocalNotaryBundle(bundlePath) {
   var convergence = Components.classes['@thoughtcrime.org/convergence;1']
@@ -58,41 +47,20 @@ function handleLocalNotaryBundle(bundlePath) {
   }
 
   return true;
-};
+}
 
 function handleRemoteNotaryBundle(bundleUrl) {
-  var ioService     = Components.classes["@mozilla.org/network/io-service;1"]  
-                      .getService(Components.interfaces.nsIIOService);  
-  var uri           = ioService.newURI(bundleUrl, null, null);  
-  var temporaryFile = this.getTemporaryFile();      
-  var wbp           = Components.classes['@mozilla.org/embedding/browser/nsWebBrowserPersist;1']
-                      .createInstance(Components.interfaces.nsIWebBrowserPersist);
-  var dialog        = document.getElementById("convergence-add-notary");
-      
-  wbp.progressListener = {
-    onProgressChange: function(aWebProgress, aRequest, 
-			       aCurSelfProgress, aMaxSelfProgress, 
-			       aCurTotalProgress, aMaxTotalProgress) 
-    {},
-    onStateChange: function(aWebProgress, aRequest, aStateFlags, aStatus) {
-      if ((aStateFlags & Components.interfaces.nsIWebProgressListener.STATE_STOP)) {
-	dump("Download complete, handling local notary bundle...\n");
-	dialog.asyncInProgress = false;
-	handleLocalNotaryBundle(temporaryFile.path);
-	dialog.asyncComplete   = true;
-	dialog.acceptDialog();
-      }
-    }
-  }
+  var dialog = document.getElementById("convergence-add-notary");
 
-  wbp.persistFlags &= ~Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_NO_CONVERSION | 
-                       Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_BYPASS_CACHE;
-
-  dialog.asyncInProgress = true;
-  wbp.saveURI(uri, null, null, null, null, temporaryFile);
+  ConvergenceUtil.persistUrl(bundleUrl, function(temporaryFile) {
+      dialog.asyncInProgress = false;
+      handleLocalNotaryBundle(temporaryFile.path);
+      dialog.asyncComplete   = true;
+      dialog.acceptDialog();
+    });
 
   return false;
-};
+}
 
 function onDialogOK() {  
   if (document.getElementById("convergence-add-notary").asyncComplete)

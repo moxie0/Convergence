@@ -42,6 +42,7 @@ function Convergence() {
     this.registerProxyObserver();
     this.registerObserverService();
 
+    this.initializeNotaryUpdateTimer(false);
     dump("Convergence Setup Complete.\n");
   } catch (e) {
     dump("Initializing error: " + e + " , " + e.stack + "\n");
@@ -63,6 +64,7 @@ Convergence.prototype = {
   sqliteFile:         null,
   cacheFile:          null,
   certificateManager: null,
+  timer:              Components.classes["@mozilla.org/timer;1"].createInstance(Components.interfaces.nsITimer),
 
   initializeCtypes: function() {
     try {
@@ -140,6 +142,30 @@ Convergence.prototype = {
     databaseHelper.close();
   },
 
+  initializeNotaryUpdateTimer: function(reschedule) {
+    var prefs = Components.classes["@mozilla.org/preferences-service;1"]
+                .getService(Components.interfaces.nsIPrefService)
+                .getBranch("extensions.convergence.");
+
+    var updateBundleTime = 0;
+
+    try {
+      if (!reschedule)
+	updateBundleTime = parseInt(prefs.getCharPref("updateBundleTime"));
+    } catch (e) {}
+
+    if (updateBundleTime == 0) {
+      updateBundleTime = Date.now() + (24 * 60 * 60 * 1000) + Math.floor((Math.random() * (12 * 60 * 60 *1000)));
+      // updateBundleTime = Date.now() + 10000;
+      prefs.setCharPref("updateBundleTime", updateBundleTime + "");
+    }
+
+    var difference = Math.max(1, updateBundleTime - Date.now());
+    this.timer.init(this, difference, 0);
+
+    dump("Timer will fire in: " + difference + "\n");
+  },
+
   setEnabled: function(value) {
     this.enabled = value;
     this.settingsManager.setEnabled(value);
@@ -175,6 +201,7 @@ Convergence.prototype = {
     .getService(Components.interfaces.nsIObserverService);
     observerService.addObserver(this, "quit-application", false);
     observerService.addObserver(this, "network:offline-status-changed", false);
+    observerService.addObserver(this, "convergence-notary-updated", false);
   },
 
   registerProxyObserver: function() {
@@ -196,7 +223,23 @@ Convergence.prototype = {
 	dump("Initializing listensocket...\n");
 	this.initializeConnectionManager();
       }
+    } else if (topic == 'timer-callback') {
+      dump("Got timer update...\n");
+      this.handleNotaryUpdates();
+    } else if (topic == 'convergence-notary-updated') {
+      dump("Got update callback...\n");
+      this.settingsManager.savePreferences();
     }
+  },
+
+  handleNotaryUpdates: function() {
+    var notaries = this.settingsManager.getNotaryList();
+    
+    for (var i in notaries) {
+      notaries[i].update();
+    }
+
+    this.initializeNotaryUpdateTimer(true);
   },
 
   isNotaryUri: function(uri) {
@@ -318,3 +361,4 @@ loadScript(false, null, "SettingsManager.js");
 loadScript(false, null, "ConnectionManager.js");
 loadScript(true, "ssl", "NativeCertificateCache.js");
 loadScript(false, null, "DatabaseHelper.js");
+loadScript(true, "util", "ConvergenceUtil.js");

@@ -8,6 +8,7 @@
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
 <script src="addNotary.js" />
+<script src="util/ConvergenceUtil.js" />
 
 <vbox>
       <hbox>

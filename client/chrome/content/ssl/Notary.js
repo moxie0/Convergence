@@ -28,6 +28,7 @@
 function Notary(serialized) {
   if (typeof serialized == 'undefined') {
     this.name             = null;
+    this.bundleLocation   = null;
     this.enabled          = false;
     this.physicalNotaries = new Array();
     this.open             = true;
@@ -35,6 +36,7 @@ function Notary(serialized) {
   } else {
     this.name             = serialized.name;
     this.enabled          = serialized.enabled;
+    this.bundleLocation   = serialized.bundle_location;
     this.open             = true;
     this.parent           = true;
     this.physicalNotaries = new Array();
@@ -185,6 +187,32 @@ Notary.prototype.checkValidity = function(host, port, certificate, proxy) {
   }
 };
 
+Notary.prototype.update = function() {
+  dump("Calling update on: " + this.name + "\n");
+
+  if (this.bundleLocation == null || 
+      this.bundleLocation.indexOf("https://") != 0)
+    return;
+
+  var self = this;
+
+  ConvergenceUtil.persistUrl(this.bundleLocation, function(temporaryFile) {
+      var notary = Notary.constructFromBundle(temporaryFile.path);
+      if (notary.version < this.version)
+	return;
+      
+      dump("Updating notary with new bundle...\n");
+
+      self.setName(notary.getName());
+      self.setBundleLocation(notary.getBundleLocation());
+      self.setPhysicalNotaries(notary.getPhysicalNotaries());
+
+      var observerService = Components.classes["@mozilla.org/observer-service;1"]
+	                    .getService(Components.interfaces.nsIObserverService);  
+      observerService.notifyObservers(observerService, "convergence-notary-updated", null);
+    });
+};
+
 Notary.prototype.getName = function() {
   return this.name;
 };
@@ -199,6 +227,14 @@ Notary.prototype.getEnabled = function() {
 
 Notary.prototype.setEnabled = function(value) {
   this.enabled = value;
+};
+
+Notary.prototype.setBundleLocation = function(value) {
+  this.bundleLocation = value;
+};
+
+Notary.prototype.getBundleLocation = function() {
+  return this.bundleLocation;
 };
 
 Notary.prototype.getPhysicalNotaries = function() {
@@ -218,6 +254,7 @@ Notary.prototype.serializeForTransport = function() {
 
   var serialized = {'name'              : this.name,
   		    'enabled'           : this.enabled,
+		    'bundle_location'   : this.bundleLocation,
 		    'physical_notaries' : serializedPhysicalNotaries};
 
   return serialized;
@@ -228,6 +265,9 @@ Notary.prototype.serialize = function(xmlDocument) {
   var proxyElement = xmlDocument.createElement("logical-notary");
   proxyElement.setAttribute("name", this.name);
   proxyElement.setAttribute("enabled", this.enabled);
+  
+  if (this.bundleLocation != null)
+    proxyElement.setAttribute("bundle_location", this.bundleLocation);
 
   for (var i=0;i<this.physicalNotaries.length;i++) {
     var physicalElement = this.physicalNotaries[i].serialize(xmlDocument);
@@ -241,6 +281,10 @@ Notary.prototype.deserialize = function(logicalElement, version) {
   if (version > 0) {
     this.name            = logicalElement.getAttribute("name");
     this.enabled         = (logicalElement.getAttribute("enabled") == "true");
+    
+    if (logicalElement.hasAttribute("bundle_location"))
+      this.bundleLocation = logicalElement.getAttribute("bundle_location");
+
     var physicalNotaries = logicalElement.getElementsByTagName("physical-notary");
 
     for (var i=0;i<physicalNotaries.length;i++) {
@@ -277,6 +321,7 @@ Notary.constructFromV1Json = function(notaryJson) {
   }
 
   notary.setName(notaryJson.name);
+  notary.setBundleLocation(notaryJson.bundle_location);
   notary.setEnabled(true);
   notary.setPhysicalNotaries(physicalNotaries);
   

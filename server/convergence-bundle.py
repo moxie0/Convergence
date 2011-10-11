@@ -41,7 +41,7 @@ def loopingPrompt(message):
     return value
 
 def promptForLogicalInfo():
-    bundle = {"name" : "", "hosts" : [], "version" : 1}
+    bundle = {"name" : "", "hosts" : [], "bundle_location" : "", "version" : 1}
     
     print "\n" + textwrap.fill("A notary is a 'logical' entity that represents an " \
                                  "arbitrary number of physical hosts.  To create a " \
@@ -53,10 +53,22 @@ def promptForLogicalInfo():
     print "\n\n" + textwrap.fill("First, please enter the name of the entity managing this notary. " \
                                  "For an individual, this would be an individual's " \
                                  "name (eg: John Smith). For an organization, this " \
-                                 "would be the organization's name (eg: Acme): ", 78) + "\n"
+                                 "would be the organization's name (eg: Acme).", 78) + "\n"
 
     bundle['name'] = loopingPrompt("Notary name: ")
 
+    print "\n\n" + textwrap.fill("Next, please enter the complete URL for where this bundle will " \
+                                 "be hosted (eg: https://thoughtcrime.org/thoughtcrime.notary).  It must " \
+                                 "be an https URL, and the file must have a '.notary' " \
+                                 "extension. This location will be periodically checked by clients for " \
+                                 "updates to your notary configuration.", 78) + "\n"
+
+    bundle['bundle_location'] = loopingPrompt("Bundle location: ")
+
+    while (not bundle['bundle_location'].startswith("https://")) or (not bundle['bundle_location'].endswith(".notary")):
+        print textwrap.fill("Sorry, the bundle location must be an HTTPS URL and have a '.notary' file extension.", 78)
+        bundle['bundle_location'] = loopingPrompt("Bundle location: ")
+    
     return bundle
     
 def promptForPhysicalInfo(count):

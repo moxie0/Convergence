@@ -237,6 +237,7 @@ SettingsManager.prototype.getDefaultNotaryList = function() {
   thoughtcrimeNodes.push(notaryTwo);
 
   thoughtcrime.setName("Thoughtcrime Labs");
+  thoughtcrime.setBundleLocation("https://ssl.thoughtcrime.org/thoughtcrime.notary");
   thoughtcrime.setEnabled(true);
   thoughtcrime.setPhysicalNotaries(thoughtcrimeNodes);
 

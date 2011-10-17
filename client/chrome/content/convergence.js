@@ -116,13 +116,14 @@ var Convergence = {
     var notary;
 
     try {
-      notary = convergenceManager.getNewNotaryFromBundle(path);
+      notary = this.convergenceManager.getNewNotaryFromBundle(path);
     } catch (exception) {
+      dump("Got exception: " + exception + " , " + exception.stack + "\n");
       alert("Unknown Notary bundle version: " + exception.version + "!");
       return;
     }
 
-    var settingsManager = convergenceManager.getSettingsManager();
+    var settingsManager = this.convergenceManager.getSettingsManager();
 
     var promptService   = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
                           .getService(Components.interfaces.nsIPromptService);

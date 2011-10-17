@@ -46,9 +46,8 @@ ConvergenceContentPolicy.prototype = {
 	  var observerService = Components.classes["@mozilla.org/observer-service;1"]
 	                        .getService(Components.interfaces.nsIObserverService);  
 	  observerService.notifyObservers(observerService, "convergence-add-notary", temporaryFile.path);
-	  dump("Notified observers...\n");
 	});
-            
+
       return Components.interfaces.nsIContentPolicy.REJECT_REQUEST;
     }
 
@@ -69,3 +68,38 @@ if (XPCOMUtils.generateNSGetFactory)
   var NSGetFactory = XPCOMUtils.generateNSGetFactory(components);
 else
   var NSGetModule = XPCOMUtils.generateNSGetModule(components);
+
+/** Component Loading **/
+
+var loadScript = function(isChrome, subdir, filename) {
+  try {
+    var path = __LOCATION__.parent.clone();
+
+    if (isChrome) {
+      path = path.parent.clone();
+      path.append("chrome");
+      path.append("content");
+    }
+
+    if (subdir != null) {
+      path.append(subdir);      
+    }
+
+    path.append(filename);
+
+    dump("Loading: " + path.path + "\n");
+
+    var fileProtocol = Components.classes["@mozilla.org/network/protocol;1?name=file"]
+    .getService(Components.interfaces["nsIFileProtocolHandler"]);
+    var loader       = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
+    .getService(Components.interfaces["mozIJSSubScriptLoader"]);
+        
+    loader.loadSubScript(fileProtocol.getURLSpecFromFile(path));
+
+    dump("Loaded!\n");
+  } catch (e) {
+    dump("Error loading component script: " + path.path + " : " + e + " , " + e.stack + "\n");
+  }
+};
+
+loadScript(true, "util", "ConvergenceUtil.js");

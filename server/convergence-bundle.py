@@ -29,7 +29,6 @@ import sys, getopt, textwrap, json
 def loadCertificate(path):
     fd       = open(path, "r")
     contents = fd.read()
-    contents = contents.replace("\n", r"\n")
 
     return contents
 

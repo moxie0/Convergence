@@ -189,8 +189,8 @@ SettingsManager.prototype.upgradeIfNecessary = function() {
       this.removeNotaries(["notary-us.convergence.qualys.com",
 			   "notary-eu.convergence.qualys.com"]);
 
-      this.removeNotaries(["convergence.crypto.is",
-	                   "convergence2.crypto.is"]);      
+      // this.removeNotaries(["convergence.crypto.is",
+      // 	                   "convergence2.crypto.is"]);      
 
       this.notaries = this.getDefaultNotaryList().concat(this.notaries);
     } else {
@@ -199,10 +199,10 @@ SettingsManager.prototype.upgradeIfNecessary = function() {
     	this.notaries = this.getDefaultQualysInc().concat(this.notaries);
       }
 
-      if (this.removeNotaries(["convergence.crypto.is",
-      			       "convergence2.crypto.is"])) {
-      	this.notaries = this.getDefaultCryptoProject().concat(this.notaries);
-      }
+      // if (this.removeNotaries(["convergence.crypto.is",
+      // 			       "convergence2.crypto.is"])) {
+      // 	this.notaries = this.getDefaultCryptoProject().concat(this.notaries);
+      // }
     }
   }
 };
@@ -288,42 +288,42 @@ SettingsManager.prototype.getDefaultQualysInc = function() {
   return qualys;
 };
 
-SettingsManager.prototype.getDefaultCryptoProject = function() {
-  var crypto      = new Notary();
-  var cryptoNodes = new Array();
+// SettingsManager.prototype.getDefaultCryptoProject = function() {
+//   var crypto      = new Notary();
+//   var cryptoNodes = new Array();
   
-  var notaryOne = new PhysicalNotary();
-  notaryOne.setHost("convergence.crypto.is");
-  notaryOne.setSSLPort(8843);
-  notaryOne.setHTTPPort(8080);
-  notaryOne.setCertificate("-----BEGIN CERTIFICATE-----\nMIIDcjCCAloCCQCCUQAv7kG09zANBgkqhkiG9w0BAQUFADB6MQswCQYDVQQGEwJV\nUzETMBEGA1UECBMKU29tZS1TdGF0ZTEbMBkGA1UEChMSVGhlIENyeXB0byBQcm9q\nZWN0MRUwEwYDVQQDEwxTaXIgVmFsaWFuY2UxIjAgBgkqhkiG9w0BCQEWE3NpckBz\naXJ2YWxpYW5jZS5jb20wIBcNMTEwODI0MDQxMTUyWhgPMjA1MTA4MTQwNDExNTJa\nMHoxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpTb21lLVN0YXRlMRswGQYDVQQKExJU\naGUgQ3J5cHRvIFByb2plY3QxFTATBgNVBAMTDFNpciBWYWxpYW5jZTEiMCAGCSqG\nSIb3DQEJARYTc2lyQHNpcnZhbGlhbmNlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQAD\nggEPADCCAQoCggEBANZfJ7HP+4nHifL6PD4JQK8+Ez9SlQ3k9WTGg6Nz0mTsEpIo\nXi6p5z+A63wiZop/bs1arw1tH9l84If0d6/lFYhybP4Db5b2nzekcFu9P90y7FRQ\nOyF+AbZuZ9dL5D2p0BcEVeKBkAGNSl4HiT5f0dMKwKPeFbIFwm16XvgXyWa3TKZq\nCZeQQrCj5zWxDnHYAw19/lf0nnqbgX1+nXfXS+bz91eksMeSDWM55s1ZzWATTBg9\nL49v1AtEN6iUtXjwh/VTqHEtCuzggHNaOKM38lbzTG6k1GmhGyVGACQI0eWBPGUN\nrmrXvSwDCWIHK5G74meAYjS5rpyKjoceOHz9WAsCAwEAATANBgkqhkiG9w0BAQUF\nAAOCAQEAB8eMbmfzp1YzYcS9WRS4Rz+tnKxnOfFW2V+M2s93G4aJ1rf+RchYoMzV\n6EcnXRB+HD7S4cmnhFnxlDRwtqrMmQU1gtpBNc6R26fNVe4dtXnSnkCXaEpQSfvh\nZ1HXrddykcwBGq2OIUFV7GjikfNGbgxP5yuKE4Sw2HOnn2s384u4VBxvtIwVrq4x\n6kUavGQy+iTTHsR76r5SOhsST+rvWC51OuNrkVLYmTLNgV+AX8p8bljdPhlkU+nD\nZ0ciklPV/4z+RHVAacbrrIUJEjjJrJTnxLcKVL7+gIP5CW2xaUpkfuA7GjAhGe+u\nwGOoe/3KEU/yBaWXMiOyYduFoog8IQ==\n-----END CERTIFICATE-----\n");
+//   var notaryOne = new PhysicalNotary();
+//   notaryOne.setHost("convergence.crypto.is");
+//   notaryOne.setSSLPort(8843);
+//   notaryOne.setHTTPPort(8080);
+//   notaryOne.setCertificate("-----BEGIN CERTIFICATE-----\nMIIDcjCCAloCCQCCUQAv7kG09zANBgkqhkiG9w0BAQUFADB6MQswCQYDVQQGEwJV\nUzETMBEGA1UECBMKU29tZS1TdGF0ZTEbMBkGA1UEChMSVGhlIENyeXB0byBQcm9q\nZWN0MRUwEwYDVQQDEwxTaXIgVmFsaWFuY2UxIjAgBgkqhkiG9w0BCQEWE3NpckBz\naXJ2YWxpYW5jZS5jb20wIBcNMTEwODI0MDQxMTUyWhgPMjA1MTA4MTQwNDExNTJa\nMHoxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpTb21lLVN0YXRlMRswGQYDVQQKExJU\naGUgQ3J5cHRvIFByb2plY3QxFTATBgNVBAMTDFNpciBWYWxpYW5jZTEiMCAGCSqG\nSIb3DQEJARYTc2lyQHNpcnZhbGlhbmNlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQAD\nggEPADCCAQoCggEBANZfJ7HP+4nHifL6PD4JQK8+Ez9SlQ3k9WTGg6Nz0mTsEpIo\nXi6p5z+A63wiZop/bs1arw1tH9l84If0d6/lFYhybP4Db5b2nzekcFu9P90y7FRQ\nOyF+AbZuZ9dL5D2p0BcEVeKBkAGNSl4HiT5f0dMKwKPeFbIFwm16XvgXyWa3TKZq\nCZeQQrCj5zWxDnHYAw19/lf0nnqbgX1+nXfXS+bz91eksMeSDWM55s1ZzWATTBg9\nL49v1AtEN6iUtXjwh/VTqHEtCuzggHNaOKM38lbzTG6k1GmhGyVGACQI0eWBPGUN\nrmrXvSwDCWIHK5G74meAYjS5rpyKjoceOHz9WAsCAwEAATANBgkqhkiG9w0BAQUF\nAAOCAQEAB8eMbmfzp1YzYcS9WRS4Rz+tnKxnOfFW2V+M2s93G4aJ1rf+RchYoMzV\n6EcnXRB+HD7S4cmnhFnxlDRwtqrMmQU1gtpBNc6R26fNVe4dtXnSnkCXaEpQSfvh\nZ1HXrddykcwBGq2OIUFV7GjikfNGbgxP5yuKE4Sw2HOnn2s384u4VBxvtIwVrq4x\n6kUavGQy+iTTHsR76r5SOhsST+rvWC51OuNrkVLYmTLNgV+AX8p8bljdPhlkU+nD\nZ0ciklPV/4z+RHVAacbrrIUJEjjJrJTnxLcKVL7+gIP5CW2xaUpkfuA7GjAhGe+u\nwGOoe/3KEU/yBaWXMiOyYduFoog8IQ==\n-----END CERTIFICATE-----\n");
 
-  var notaryTwo = new PhysicalNotary();
-  notaryTwo.setHost("convergence2.crypto.is");
-  notaryTwo.setSSLPort(8843);
-  notaryTwo.setHTTPPort(8080);
-  notaryTwo.setCertificate("-----BEGIN CERTIFICATE-----\nMIIDcjCCAloCCQDSQ8OiEi68cDANBgkqhkiG9w0BAQUFADB6MQswCQYDVQQGEwJV\nUzETMBEGA1UECBMKU29tZS1TdGF0ZTEbMBkGA1UEChMSVGhlIENyeXB0byBQcm9q\nZWN0MRUwEwYDVQQDEwxTaXIgVmFsaWFuY2UxIjAgBgkqhkiG9w0BCQEWE3NpckBz\naXJ2YWxpYW5jZS5jb20wIBcNMTExMDA3MDM0OTIzWhgPMjA1MTA5MjcwMzQ5MjNa\nMHoxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpTb21lLVN0YXRlMRswGQYDVQQKExJU\naGUgQ3J5cHRvIFByb2plY3QxFTATBgNVBAMTDFNpciBWYWxpYW5jZTEiMCAGCSqG\nSIb3DQEJARYTc2lyQHNpcnZhbGlhbmNlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQAD\nggEPADCCAQoCggEBANU7sEfoDCKlwsZI+wisdNOfVx5tfBWaGAegpMvlYif3ffPQ\n1djT5Fw+13V/q2FJ7L8Nmu04nXKfxD/E+hhPtnTf/Qlae6QC1wnb0T1Vd4uBDaXw\n5NBMRkkvtLTQf3OJn0TMklDa86r7okuqiBxq4k5GC3rQlnBZPjvMXZ1h/lC/SZrL\nRkNOcybdf+NZLTaQ/zx4evrDaiE9TWN77x2oEbadfQWU7GRy8wwHZdEWgzzIXvUU\nMJx+o3hVy9O60peruZd2lEM9VNMMXA/hU7Xe/o2Q1+hs/qQoSk7Dltl4QsBKkVMn\nv3wWZIR0onP/3rVv2VjQ+Vijm5nXWgC1TvkovFECAwEAATANBgkqhkiG9w0BAQUF\nAAOCAQEAvLisHoqZdJQwZpA33h7lC5LGRgSPliJNzAFXB0DnKMWnHyPCBQ8a+wUB\nOpYZpbgfD6XKuVVZtJ28b8j6BoE8YP8N7BZea/7HDU3iyK9c0uxsPMn2cov02e1l\nZeqXMPGT8eR43Df0K/3z1v6J5bYTxOpmz1zCJV9crH9beKUtJXDPVzUgduqY0bB6\nDiTOK0jDsfEm4YaUg7NoOVgRzsY37zDOfoLsq6bA/Goa6k4FLveFYPCa4UzdA5pz\nVFt0he9+eNGQsZJKd2kguXmxMyVTRECF95Vpmodzudr6/fuMkc2FZS3NsfFAb1bx\nHI+1To2Tg55xtUxpf+yGHodxdrgbCg==\n-----END CERTIFICATE-----\n");
+//   var notaryTwo = new PhysicalNotary();
+//   notaryTwo.setHost("convergence2.crypto.is");
+//   notaryTwo.setSSLPort(8843);
+//   notaryTwo.setHTTPPort(8080);
+//   notaryTwo.setCertificate("-----BEGIN CERTIFICATE-----\nMIIDcjCCAloCCQDSQ8OiEi68cDANBgkqhkiG9w0BAQUFADB6MQswCQYDVQQGEwJV\nUzETMBEGA1UECBMKU29tZS1TdGF0ZTEbMBkGA1UEChMSVGhlIENyeXB0byBQcm9q\nZWN0MRUwEwYDVQQDEwxTaXIgVmFsaWFuY2UxIjAgBgkqhkiG9w0BCQEWE3NpckBz\naXJ2YWxpYW5jZS5jb20wIBcNMTExMDA3MDM0OTIzWhgPMjA1MTA5MjcwMzQ5MjNa\nMHoxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpTb21lLVN0YXRlMRswGQYDVQQKExJU\naGUgQ3J5cHRvIFByb2plY3QxFTATBgNVBAMTDFNpciBWYWxpYW5jZTEiMCAGCSqG\nSIb3DQEJARYTc2lyQHNpcnZhbGlhbmNlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQAD\nggEPADCCAQoCggEBANU7sEfoDCKlwsZI+wisdNOfVx5tfBWaGAegpMvlYif3ffPQ\n1djT5Fw+13V/q2FJ7L8Nmu04nXKfxD/E+hhPtnTf/Qlae6QC1wnb0T1Vd4uBDaXw\n5NBMRkkvtLTQf3OJn0TMklDa86r7okuqiBxq4k5GC3rQlnBZPjvMXZ1h/lC/SZrL\nRkNOcybdf+NZLTaQ/zx4evrDaiE9TWN77x2oEbadfQWU7GRy8wwHZdEWgzzIXvUU\nMJx+o3hVy9O60peruZd2lEM9VNMMXA/hU7Xe/o2Q1+hs/qQoSk7Dltl4QsBKkVMn\nv3wWZIR0onP/3rVv2VjQ+Vijm5nXWgC1TvkovFECAwEAATANBgkqhkiG9w0BAQUF\nAAOCAQEAvLisHoqZdJQwZpA33h7lC5LGRgSPliJNzAFXB0DnKMWnHyPCBQ8a+wUB\nOpYZpbgfD6XKuVVZtJ28b8j6BoE8YP8N7BZea/7HDU3iyK9c0uxsPMn2cov02e1l\nZeqXMPGT8eR43Df0K/3z1v6J5bYTxOpmz1zCJV9crH9beKUtJXDPVzUgduqY0bB6\nDiTOK0jDsfEm4YaUg7NoOVgRzsY37zDOfoLsq6bA/Goa6k4FLveFYPCa4UzdA5pz\nVFt0he9+eNGQsZJKd2kguXmxMyVTRECF95Vpmodzudr6/fuMkc2FZS3NsfFAb1bx\nHI+1To2Tg55xtUxpf+yGHodxdrgbCg==\n-----END CERTIFICATE-----\n");
 
-  cryptoNodes.push(notaryOne);
-  cryptoNodes.push(notaryTwo);
+//   cryptoNodes.push(notaryOne);
+//   cryptoNodes.push(notaryTwo);
 
-  crypto.setName("The Crypto Project");
-  crypto.setBundleLocation("https://crypto.is/static/files/cryptoproject.notary");
-  crypto.setEnabled(true);
-  crypto.setPhysicalNotaries(cryptoNodes);
+//   crypto.setName("The Crypto Project");
+//   crypto.setBundleLocation("https://crypto.is/static/files/cryptoproject.notary");
+//   crypto.setEnabled(true);
+//   crypto.setPhysicalNotaries(cryptoNodes);
 
-  return crypto;
-};
+//   return crypto;
+// };
 
 SettingsManager.prototype.getDefaultNotaryList = function() {
   var notaryList   = new Array();
   var thoughtcrime = this.getDefaultThoughtcrimeLabs();
   var qualys       = this.getDefaultQualysInc();
-  var crypto       = this.getDefaultCryptoProject();
+  // var crypto       = this.getDefaultCryptoProject();
 
   notaryList.push(thoughtcrime);
   notaryList.push(qualys);
-  notaryList.push(crypto);
+  // notaryList.push(crypto);
 
   return notaryList;
 };

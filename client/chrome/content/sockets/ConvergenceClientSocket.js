@@ -91,8 +91,15 @@ ConvergenceClientSocket.prototype.negotiateSSL = function() {
     throw "Error resetting handshake!";
   }
 
-  var status = SSL.lib.SSL_ForceHandshakeWithTimeout(this.fd, NSPR.lib.PR_SecondsToInterval(10));
-  // var status = NSS.lib.SSL_ForceHandshake(this.fd);
+  var status;
+
+  while (((status = SSL.lib.SSL_ForceHandshakeWithTimeout(this.fd, NSPR.lib.PR_SecondsToInterval(10))) == -1) &&
+	 (NSPR.lib.PR_GetError() == NSPR.lib.PR_WOULD_BLOCK_ERROR))
+  {
+    dump("Polling on handshake...\n");
+    if (!this.waitForInput(10000))
+      throw "SSL handshake failed!";
+  }
 
   if (status == -1) {
     throw "SSL handshake failed!";
@@ -111,9 +118,18 @@ ConvergenceClientSocket.prototype.writeBytes = function(buffer, length) {
 
 ConvergenceClientSocket.prototype.readString = function() {
   var buffer = new NSPR.lib.buffer(4096);
-  var read   = NSPR.lib.PR_Read(this.fd, buffer, 4095);
+  var read;
+
+  while (((read = NSPR.lib.PR_Read(this.fd, buffer, 4095)) == -1) && 
+	 (NSPR.lib.PR_GetError() == NSPR.lib.PR_WOULD_BLOCK_ERROR))
+  {
+    dump("polling on read...\n");
+    if (!this.waitForInput(-1))
+      return null;
+  }
 
   if (read <= 0) {
+    dump("Error read: " + read + " , " + NSPR.lib.PR_GetError() + "\n");
     return null;
   }
 
@@ -123,7 +139,14 @@ ConvergenceClientSocket.prototype.readString = function() {
 
 ConvergenceClientSocket.prototype.readFully = function(length) {
   var buffer = new NSPR.lib.buffer(length);
-  var read   = NSPR.lib.PR_Read(this.fd, buffer, length);
+  var read;
+
+  while (((read = NSPR.lib.PR_Read(this.fd, buffer, length)) == -1) && 
+	 (NSPR.lib.PR_GetError() == NSPR.lib.PR_WOULD_BLOCK_ERROR))
+  {
+    if (!this.waitForInput(-1))
+      return null;
+  }
 
   if (read != length) {
     throw "Assertion error on read fully (" + read + ", " + length + ")!";
@@ -134,4 +157,20 @@ ConvergenceClientSocket.prototype.readFully = function(length) {
 
 ConvergenceClientSocket.prototype.close = function() {
   NSPR.lib.PR_Close(this.fd);
+};
+
+ConvergenceClientSocket.prototype.waitForInput = function(timeoutMillis) {
+  var pollfds_t        = ctypes.ArrayType(NSPR.types.PRPollDesc);
+  var pollfds          = new pollfds_t(1);
+  pollfds[0].fd        = this.fd;
+  pollfds[0].in_flags  = NSPR.lib.PR_POLL_READ | NSPR.lib.PR_POLL_EXCEPT | NSPR.lib.PR_POLL_ERR;
+  pollfds[0].out_flags = 0;
+
+  var status = NSPR.lib.PR_Poll(pollfds, 1, timeoutMillis);
+  
+  if (status == -1 || status == 0) {
+    return false;
+  }
+
+  return true;
 };

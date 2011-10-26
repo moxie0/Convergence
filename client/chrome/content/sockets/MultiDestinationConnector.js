@@ -15,14 +15,16 @@ MultiDestinationConnector.prototype.makeConnection = function(destinations) {
   if (connectionIndex == -1) {
     throw "MultiDestination connection failed!";
   } else {
-    this.makeBlocking(pollfds[connectionIndex].fd);
+    // this.makeBlocking(pollfds[connectionIndex].fd);
     return new ConvergenceClientSocket(null, null, null, pollfds[connectionIndex].fd);
   }
 };
 
 MultiDestinationConnector.prototype.makeBlocking = function(fd) {
   var socketOption = NSPR.types.PRSocketOptionData({'option' : 0, 'value' : 0});  
-  NSPR.lib.PR_SetSocketOption(fd, socketOption.address());
+  var status       = NSPR.lib.PR_SetSocketOption(fd, socketOption.address());
+
+  dump("Switch back to blocking status: " + status + " , " + NSPR.lib.PR_GetError() + "\n");
 };
 
 MultiDestinationConnector.prototype.waitForConnection = function(pollfds, addresses) {

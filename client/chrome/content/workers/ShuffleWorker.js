@@ -33,31 +33,31 @@ importScripts("chrome://convergence/content/ctypes/NSPR.js",
 	      "chrome://convergence/content/ctypes/SSL.js",
 	      "chrome://convergence/content/sockets/ConvergenceServerSocket.js",
 	      "chrome://convergence/content/sockets/ConvergenceListenSocket.js",
-	      "chrome://convergence/content/ctypes/Serialization.js");
+	      "chrome://convergence/content/ctypes/Serialization.js",
+	      "chrome://convergence/content/workers/ShuffleWorkerItem.js");
 
 const TYPE_INITIALIZE = 1;
 const TYPE_CONNECTION = 2;
 
 function ShuffleWorker() {
-  this.wakeup      = null;
-  this.connections = new Array();
+  this.wakeup          = null;
+  this.connectionPairs = new Array();
 }
 
 ShuffleWorker.prototype.initializeDescriptors = function() {
   var descriptors       = new Object();
-  var connectionsLength = this.connections.length;
+  var connectionsLength = this.connectionPairs.length * 2;
   var pollfds_t         = ctypes.ArrayType(NSPR.types.PRPollDesc);
   var pollfds           = new pollfds_t(connectionsLength + 2);
 
-  for (var i=0;i<connectionsLength;i++) {
-    pollfds[i].fd        = this.connections[i];
-    pollfds[i].in_flags  = NSPR.lib.PR_POLL_READ | NSPR.lib.PR_POLL_EXCEPT | NSPR.lib.PR_POLL_ERR;
-    pollfds[i].out_flags = 0;
+  for (var i=0;i<this.connectionPairs.length;i++) {
+    this.connectionPairs[i].getPollDesc(pollfds[i*2].address(), 
+					pollfds[(i*2)+1].address());
   }
 
-  pollfds[connectionsLength].fd        = this.wakeup;
-  pollfds[connectionsLength].in_flags  = NSPR.lib.PR_POLL_READ;
-  pollfds[connectionsLength].out_flags = 0;
+  pollfds[connectionsLength].fd            = this.wakeup;
+  pollfds[connectionsLength].in_flags      = NSPR.lib.PR_POLL_READ;
+  pollfds[connectionsLength].out_flags     = 0;
 
   pollfds[connectionsLength + 1].fd        = this.listenSocket.fd;
   pollfds[connectionsLength + 1].in_flags  = NSPR.lib.PR_POLL_READ;
@@ -74,7 +74,7 @@ ShuffleWorker.prototype.initialize = function(data) {
   NSS.initialize(data.nssFile);
   SSL.initialize(data.sslFile);
 
-  this.buffer       = new NSPR.lib.buffer(4096);
+  this.buffer       = new NSPR.lib.buffer(512);
   this.wakeup       = Serialization.deserializeDescriptor(data.fd);
   this.listenSocket = new ConvergenceListenSocket(data.listenSocket);
 };
@@ -87,48 +87,27 @@ ShuffleWorker.prototype.addConnection = function(data) {
   NSPR.lib.PR_SetSocketOption(client, socketOption.address());
   NSPR.lib.PR_SetSocketOption(server, socketOption.address());
 
-  this.connections.push(client);
-  this.connections.push(server);
+  this.connectionPairs.push(new ShuffleWorkerItem(client, server));
 };
 
-ShuffleWorker.prototype.shuffleIfReady = function(flags, fromIndex, toIndex) {
-  if ((flags & NSPR.lib.PR_POLL_READ) > 0) {
-    // dump("Shuffling from: "  + fromIndex + " to " + toIndex + "\n");
-    var read = NSPR.lib.PR_Read(this.connections[fromIndex], this.buffer, 4095);
-    
-    if (read == -1) {
-      if (NSPR.lib.PR_GetError() == NSPR.lib.PR_WOULD_BLOCK_ERROR) {
-	return true;
-      } else {
-	dump("Read error: " + NSPR.lib.PR_GetError() + "\n");
-	return false;
-      }
-    } else if (read == 0) {
-      dump("ShuffleWorker: EOF!!!!\n");
-      return false;
+ShuffleWorker.prototype.handleConnectionEvents = function(pollfds, connectionsLength) {
+  var modified = false;
+
+  for (var i=connectionsLength-2;i>=0;i-=2) {
+    var result = this.connectionPairs[i/2].shuffle(pollfds[i].out_flags, 
+						   pollfds[i+1].out_flags);
+
+    if (result[0]) { // Closed
+      this.connectionPairs[i/2].close();
+      this.connectionPairs.splice(i/2, 1);
     }
-
-    this.buffer[read] = 0x00;
-    // dump("ShuffleWorker: " + this.buffer.readString() + "\n");
     
-    NSPR.lib.PR_Write(this.connections[toIndex], this.buffer, read);
+    if (result[0] || result[1]) {
+      modified = true;
+    }
   }
-  
-  return true;
-};
 
-ShuffleWorker.prototype.isSocketClosed = function(flags) {
-  return 
-  ((flags & NSPR.lib.PR_POLL_EXCEPT) != 0) ||
-  ((flags & NSPR.lib.PR_POLL_ERR) != 0)    ||
-  ((flags & NSPR.lib.PR_POLL_NVAL) != 0);
-};
-
-ShuffleWorker.prototype.removeSocketPair = function(clientIndex, serverIndex) {
-  NSPR.lib.PR_Close(this.connections[clientIndex]);
-  NSPR.lib.PR_Close(this.connections[serverIndex]);
-
-  this.connections.splice(clientIndex, 2);
+  return modified;
 };
 
 ShuffleWorker.prototype.isWakeupEvent = function(flags) {
@@ -167,26 +146,7 @@ ShuffleWorker.prototype.processConnections = function() {
       this.handleAcceptEvent();	
     }
 
-    // dump("ConnectionsLength: " + connectionsLength + "\n");
-
-    for (var i=connectionsLength-2;i>=0;i-=2) {
-      // dump("Checking pair: " + i + " , " + (i+1) + "\n");
-      if (this.isSocketClosed(pollfds[i].out_flags) ||
-	  this.isSocketClosed(pollfds[i+1].out_flags)) 
-      {
-	dump("Detected socket closed...\n");
-	this.removeSocketPair(i, i+1);
-	modified = true;
-      } else if (!this.shuffleIfReady(pollfds[i].out_flags, i, i+1)) {
-	this.removeSocketPair(i, i+1);
-	modified = true;
-      } else if (!this.shuffleIfReady(pollfds[i+1].out_flags, i+1, i)) {
-	this.removeSocketPair(i, i+1);
-	modified = true;
-      }
-    }
-    
-    if (modified) {
+    if (this.handleConnectionEvents(pollfds, connectionsLength)) {
       descriptors       = this.initializeDescriptors();
       pollfds           = descriptors.pollfds;
       connectionsLength = descriptors.connectionsLength;

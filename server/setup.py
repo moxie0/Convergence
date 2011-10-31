@@ -31,7 +31,7 @@ REQUIRES = ['twisted.web',
            ]
 
 setup  (name             = 'convergence-notary',
-        version          = '0.3',
+        version          = '0.4',
         description      = 'An agile, distributed, and secure alternative to the Certificate Authority system.',
         author           = 'Moxie Marlinspike',
         author_email     = 'moxie@thoughtcrime.org',

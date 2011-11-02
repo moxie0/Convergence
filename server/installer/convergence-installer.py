@@ -37,8 +37,17 @@ version		= "0.3"
 ME 		= os.path.basename(sys.argv[0])
 CONV_DIR	= os.path.join(os.path.dirname(sys.argv[0]), '..')
 
+def is_port(x):
+	return ( 0 < x and x < 65536 )
+
+# Check sanity of command-line arguments
 def verifyArgs(httpPort, sslPort, uname, gname, incomingInterface, siteName, osType):
 	# testing comes soon
+	# ports are easy (numbers)
+	# uname/gname need to exist on the system
+	# incoming interface is IPv4 || IPv6 ??
+	# siteName is either . separated or localhost(4|6)
+	# os type needs checking against available options
 	return True
 
 def parseOptions(argv):
@@ -74,8 +83,9 @@ def parseOptions(argv):
 				usage()
 				sys.exit()
 		
-		if ( verifyArgs(sslPort, httpPort, uname, gname, incomingInterface, siteName, osType) ):
-			return ( sslPort, httpPort, uname, gname, incomingInterface, siteName, osType )
+		if ( '' == siteName or '' == osType ):
+			sys.exit("siteName and osType are mandatory args")
+		return ( sslPort, httpPort, uname, gname, incomingInterface, siteName, osType )
 
 	except getopt.GetoptError:
 		usage()
@@ -97,57 +107,29 @@ def usage():
 	print "-h	       Print this help message."
 	print ""
 
-# 
-# The plan
-#
-# (OS)
-# 3. install dependencies
-#
-# (Core)
-# 4. create database
-#
-# (Core)
-# 5. create the bundle
-#
-# (OS)
-# 6. move the certs and bundle to the 'data dir'
-#
-# (OS)
-# 7. create the service and service definition
-#
-# (OS)
-# 8. launch the service and test
-#
-#
-#  Thus, the following objects:
-#
-# Core
-#
-# knows about the required convergence scripts and their
-# path, and how to install them (python setup.py install) and call them
-#
-# OS
-#
-# handles dependencies and their install, and the service creation and defn,
-# and launching
-#
+def make_os_installer(os_type, convDir, siteName):
+	retval = 0;
+	if ( os_type == 'rhel6' ):
+		retval = convergence_installer.RHEL6(ME, convDir, siteName)
+	else:
+		sys.exit('Unsupported OS for installer: ' + os_type)
+	return retval
 
-#
-# Becomes:
-#
-# convergence_install/__init__.py (Core)
-# convergence_install/os.py (OS -- base)
-# convergence_install/rhel6.py (OS child of base)
-
-
+# Use the core and OS (child) objects to do all the things that need be done
 def main(argv):
 	(sslPort, httpPort, uname, gname, 
 		incomingInterface, siteName, osType) = parseOptions(argv)
-	core = convergence_installer.Core(CONV_DIR, siteName)
-	os_inst = convergence_installer.OS(CONV_DIR, siteName)
-	status = ( core.make_staging_dir() and core.gen_cert() and core.install_convergence_software() )
-	if ( status ):
-		os_inst.depend_install()
+	config = convergence_installer.Config(ME, httpPort, sslPort, uname, gname,
+		incomingInterface, siteName, osType)
+	if ( not config.verify() ):
+		sys.exit('Config looks bad')
+	core = convergence_installer.Core(ME, CONV_DIR, siteName)
+	os_inst = make_os_installer(osType, CONV_DIR, siteName)
+	# We dont create the bundle because its a prompted interface
+	# core.create_bundle()
+	retval = core.make_staging_dir() and core.gen_cert() and core.install_convergence_software() and os_inst.depend_install() and core.createdb() and os_inst.make_service() and os_inst.install_service_data() and os_inst.make_service_config(config) and os_inst.service_start() and os_inst.service_auto_start()
+	# report(retval)
+	return retval
 
 if __name__ == '__main__':
-	main(sys.argv[1:])
+	sys.exit(not main(sys.argv[1:]))

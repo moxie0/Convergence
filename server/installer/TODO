@@ -2,12 +2,6 @@
 - the username and groupname are not used (but need to be)
 - the bundle cannot be auto-created as the bundle creation
   script is prompted (or we generate it auto-magically)
-- command-line arg verification is not yet implemented
+- command-line arg verification does not look at the uname/gname
+  values.  No platform independent mechanism to do 'getent passwd' etc.
 
-
-Notes:
-
-- Using the standard /etc/sysconfig/<service> file which defined
-  PARAM=VALUE type things may not be such a good plan for convergence.
-  i.e if you change the 'httpPort' then you need to redefine the bundle.
-  Thus, perhaps, it is better to just re-install with the installer

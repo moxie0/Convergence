@@ -1,0 +1,31 @@
+
+The 'installer' area is for the development of an installer that 
+will do as much as possible for a person who wishes to run a 
+Convergence Notary.
+
+INTENTION
+---------
+
+The idea is that the would-be Notary 'runner' reads the man page
+and runs one install script with all data required provided on
+the command-line.
+
+The installer then does the rest, leaving the 'runner' with only
+one thing to do: publish the bundle.
+
+LIMITATIONS
+-----------
+
+The current environment uses two components that require human
+interaction: the certificate generator, and the bundle generator.
+
+The first is understandable.  The second can/should be 'auto-generated'
+so that the human does not need to enter the same data again.
+
+STATUS
+------
+
+This installer is only operational on RedHat Enterprise Linux 6
+(and recent Fedora Core) release(s).  It needs to embrace as many
+Linux distributions as possible, and Windows OSes (and onwards
+to BSD, MacOS etc.).

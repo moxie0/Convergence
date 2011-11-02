@@ -1,0 +1,94 @@
+#!/bin/sh
+#
+# crond          Start/Stop the convergence notary
+#
+# chkconfig: 345 95 10
+# description: convergence notaries provide an alternative to SSL trust chains
+
+### BEGIN INIT INFO
+# Provides:          convergence
+# Required-Start:    $local_fs $network $named $time
+# Required-Stop:     $local_fs $network $named $time
+# Should-Start:      $syslog
+# Should-Stop:       $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Starts The convergence daemon processes
+# Description:       Start convergence notary.
+### END INIT INFO
+
+RETVAL=0
+prog="convergence"
+exec=/usr/bin/convergence-notary
+lockfile=/var/lock/subsys/convergence
+config=/etc/sysconfig/convergence
+pidfile=/var/run/convergence.pid
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+[ -e ${config} ] && . ${config}
+
+start() {
+    if [ $UID -ne 0 ] ; then
+        echo "User has insufficient privilege."
+        exit 4
+    fi
+    [ -x $exec ] || exit 5
+    [ -f $config ] || exit 6
+    echo -n $"Starting $prog: "
+    $exec -p $PORT -s $SSL -c $CERT -k $KEY -b "$BIND"  && \
+    	success || failure
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && touch $lockfile
+    return $retval
+}
+
+stop() {
+    if [ $UID -ne 0 ] ; then
+        echo "User has insufficient privilege."
+        exit 4
+    fi
+    echo -n $"Stopping $prog: "
+	if [ -n "`pidfileofproc $prog`" ]; then
+		killproc $exec
+		RETVAL=0
+	else
+		failure $"Stopping $prog"
+	fi
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && rm -f $lockfile
+    return $retval
+}
+
+restart() {
+    stop
+    start
+}
+
+rh_status() {
+    status -p $pidfile $prog
+}
+
+
+case "$1" in
+    start)
+        $1
+        ;;
+    stop)
+        $1
+        ;;
+    restart)
+        $1
+        ;;
+    status)
+        rh_status
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart}"
+        exit 2
+esac
+exit $?
+

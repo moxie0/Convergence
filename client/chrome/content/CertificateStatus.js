@@ -90,7 +90,6 @@ CertificateStatus.prototype.getVerificationStatus = function(certificate) {
       }
     }
 
-    dump("Parsed encoded details: " + encoded + "\n");
     return JSON.parse(encoded);
   }
 };

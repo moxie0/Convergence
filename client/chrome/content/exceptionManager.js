@@ -1,7 +1,7 @@
 var status;
 
 function initializeExceptionDialog() {
-  status = window.arguments[0];
+  status = window.arguments[0]["status"];
   document.getElementById("locationLabel").value = "https://" + status.target;
   setText("headerDescription", new ConvergenceResponseStatus(status.details).toString());
 }
@@ -31,6 +31,7 @@ function addException() {
   cache.cacheFingerprint(host, port, x509.sha1Fingerprint);
   dump("Cached: " + x509.sha1Fingerprint + " for host: " + host + " and port: " + port + "\n");
 
+  window.arguments[0]["returnCode"] = true;
   document.documentElement.acceptDialog();
 }
 

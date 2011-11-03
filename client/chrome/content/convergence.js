@@ -69,8 +69,14 @@ var Convergence = {
 	  accessKey: null,  
 	  popup: null,
           callback: function() {  
+	    var argument = {"returnCode" : false, "status" : status};
 	    window.openDialog('chrome://convergence/content/exceptionDialog.xul', 
-			      'dialog', 'modal', status);
+			      'dialog', 'modal', argument);
+
+	    if (argument["returnCode"]) {
+	      gBrowser.contentDocument.location.reload();
+	    }
+	    
 	    return false;
           }  
         }];  
@@ -90,7 +96,6 @@ var Convergence = {
 	dump("On tab selected..\n");
 	try {
 	  var status = convergence.certificateStatus.getCurrentTabStatus();	  
-	  dump("Got status: " + status + "\n");
 	  convergence.setToolTip(status);
 	} catch (e) {
 	  dump(e + " , " + e.stack);

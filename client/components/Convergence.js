@@ -94,14 +94,16 @@ Convergence.prototype = {
   },
 
   initializeConnectionManager : function() {
-    this.connectionManager = new ConnectionManager(this.localProxy.getListenSocket(),
-						   this.nssFile,
-						   this.sslFile,
-						   this.nsprFile,
-						   this.sqliteFile,
-						   this.cacheFile,
-						   this.certificateManager,
-						   this.settingsManager);
+    if (this.certificateManager != null) {
+      this.connectionManager = new ConnectionManager(this.localProxy.getListenSocket(),
+						     this.nssFile,
+						     this.sslFile,
+						     this.nsprFile,
+						     this.sqliteFile,
+						     this.cacheFile,
+						     this.certificateManager,
+						     this.settingsManager);
+    }
   },
 
   initializeLocalProxy: function() {
@@ -121,12 +123,22 @@ Convergence.prototype = {
   initializeCertificateManager: function() {
     dump("Configuring cache...\n");
     SSL.lib.SSL_ConfigServerSessionIDCache(1000, 60, 60, null); 
-    this.certificateManager = new CertificateManager();
 
+    try {
+      this.certificateManager = new CertificateManager();
+    } catch (e) {
+      dump("User declined password entry, disabling convergence...\n");
+      this.certificateManager = null;
+      this.enabled            = false;
+      return false;
+    }
+    
     if (this.certificateManager.needsReboot) {
       Components.classes["@mozilla.org/toolkit/app-startup;1"].getService(Components.interfaces.nsIAppStartup)
-	.quit(Components.interfaces.nsIAppStartup.eRestart | Components.interfaces.nsIAppStartup.eAttemptQuit);
+      .quit(Components.interfaces.nsIAppStartup.eRestart | Components.interfaces.nsIAppStartup.eAttemptQuit);
     }
+
+    return true;
   },
 
   initializeCertificateCache: function() {
@@ -167,6 +179,13 @@ Convergence.prototype = {
   },
 
   setEnabled: function(value) {
+    if (value && (this.certificateManager == null)) {      
+      if (this.initializeCertificateManager())
+	this.initializeConnectionManager();
+      else 
+	return;
+    }
+
     this.enabled = value;
     this.settingsManager.setEnabled(value);
     this.settingsManager.savePreferences();
@@ -215,11 +234,13 @@ Convergence.prototype = {
   observe: function(subject, topic, data) {
     if (topic == 'quit-application') {
       dump("Got application shutdown request...\n");
-      this.connectionManager.shutdown();      
+      if (this.connectionManager != null)
+	this.connectionManager.shutdown();      
     } else if (topic == 'network:offline-status-changed') {
       if (data == 'online') {
 	dump("Got network state change, shutting down listensocket...\n");
-	this.connectionManager.shutdown();
+	if (this.connectionManager != null)
+	  this.connectionManager.shutdown();
 	dump("Initializing listensocket...\n");
 	this.initializeConnectionManager();
       }

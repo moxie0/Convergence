@@ -37,6 +37,8 @@ NSS.initialize = function(nssPath) {
 
   NSS.types = new Object();
 
+  NSS.types.CERTDistNames = ctypes.StructType("CERTDistNames");
+
   NSS.types.SECItem = ctypes.StructType("SECItem",
   				[{'type' : ctypes.int},
                                  {'data' : ctypes.unsigned_char.ptr},

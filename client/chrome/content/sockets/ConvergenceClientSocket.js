@@ -76,6 +76,12 @@ function allGoodAuth(arg, fd, foo, bar) {
   return 0;
 }
 
+function clientAuth(arg, fd, caNames, retCert, retKey) {
+  dump("Server requested client certificate...\n");
+  var status = SSL.lib.NSS_GetClientAuthData(arg, fd, caNames, retCert, retKey);
+  dump("Client certificate status: " + staus + "\n");
+}
+
 ConvergenceClientSocket.prototype.negotiateSSL = function() {
   this.fd              = SSL.lib.SSL_ImportFD(null, this.fd);
   var callbackFunction = SSL.types.SSL_AuthCertificate(allGoodAuth);
@@ -83,6 +89,13 @@ ConvergenceClientSocket.prototype.negotiateSSL = function() {
 
   if (status == -1) {
     throw "Error setting auth certificate hook!";
+  }
+
+  var callbackFunction = SSL.types.SSLGetClientAuthData(clientAuth);
+  var status           = SSL.lib.SSL_GetClientAuthDataHook(this.fd, callbackFunction, null);
+
+  if (status == -1) {
+    throw "Error setting client auth certificate hook!";
   }
 
   var status = SSL.lib.SSL_ResetHandshake(this.fd, NSPR.lib.PR_FALSE);

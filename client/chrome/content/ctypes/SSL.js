@@ -37,6 +37,15 @@ SSL.initialize = function(sslPath) {
 
   SSL.types = new Object();
 
+  SSL.types.SSLGetClientAuthData = ctypes.FunctionType(ctypes.default_abi,
+  						       ctypes.int,
+  						       [ctypes.voidptr_t,
+  							NSPR.types.PRFileDesc.ptr,
+  							NSS.types.CERTDistNames.ptr,
+  							NSS.types.CERTCertificate.ptr.ptr,
+  							NSS.types.SECKEYPrivateKey.ptr.ptr]).ptr;
+							
+							
   SSL.types.SSL_AuthCertificate = ctypes.FunctionType(ctypes.default_abi, 
 						      ctypes.int32_t, 
 						      [ctypes.voidptr_t,
@@ -66,6 +75,14 @@ SSL.initialize = function(sslPath) {
 					       NSS.types.CERTCertificate.ptr,
 					       NSS.types.SECKEYPrivateKey.ptr,
 					       ctypes.int),
+
+    SSL_GetClientAuthDataHook : sharedLib.declare("SSL_GetClientAuthDataHook",
+    						  ctypes.default_abi,
+    						  ctypes.int,
+    						  NSPR.types.PRFileDesc.ptr,
+    						  SSL.types.SSLGetClientAuthData,
+    						  ctypes.voidptr_t),
+						  
     
     SSL_AuthCertificateHook : sharedLib.declare("SSL_AuthCertificateHook",
     						ctypes.default_abi,
@@ -101,5 +118,13 @@ SSL.initialize = function(sslPath) {
 					    ctypes.int,
 					    NSS.types.CERTCertificate.ptr),
 
+    NSS_GetClientAuthData : sharedLib.declare("NSS_GetClientAuthData",
+    					      ctypes.default_abi,
+    					      ctypes.int,
+					      ctypes.voidptr_t,
+    					      NSPR.types.PRFileDesc.ptr,
+    					      NSS.types.CERTDistNames.ptr,
+    					      NSS.types.CERTCertificate.ptr.ptr,
+    					      NSS.types.SECKEYPrivateKey.ptr.ptr)
   }
 };

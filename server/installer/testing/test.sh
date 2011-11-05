@@ -8,9 +8,3 @@ function clear_dst()
 		/etc/sysconfig/convergence \
 		/etc/rc.d/init.d/convergence
 }
-
-function clear_staging()
-{
-	local name=$1
-	rm -rf $base/$name
-}

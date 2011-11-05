@@ -37,19 +37,6 @@ version		= "0.3"
 ME 		= os.path.basename(sys.argv[0])
 CONV_DIR	= os.path.join(os.path.dirname(sys.argv[0]), '..')
 
-def is_port(x):
-	return ( 0 < x and x < 65536 )
-
-# Check sanity of command-line arguments
-def verifyArgs(httpPort, sslPort, uname, gname, incomingInterface, siteName, osType):
-	# testing comes soon
-	# ports are easy (numbers)
-	# uname/gname need to exist on the system
-	# incoming interface is IPv4 || IPv6 ??
-	# siteName is either . separated or localhost(4|6)
-	# os type needs checking against available options
-	return True
-
 def parseOptions(argv):
 	# ignore for now: needs to be written into the service config
 	uname			= 'nobody'
@@ -60,13 +47,19 @@ def parseOptions(argv):
 	incomingInterface	= ''
 	siteName		= ''
 	osType			= ''
+	orgName			= ''
+	bundleUrl		= ''
 
 	try:
-		opts, args = getopt.getopt(argv, "p:s:i:u:g:n:o:h")
+		opts, args = getopt.getopt(argv, "N:b:p:s:i:u:g:n:o:h")
 
 		for opt, arg in opts:
 			if opt in("-n"):
 				siteName = arg
+			if opt in("-N"):
+				orgName = arg
+			if opt in("-b"):
+				bundleUrl = arg
 			if opt in("-o"):
 				osType = arg
 			if opt in("-p"):
@@ -83,52 +76,61 @@ def parseOptions(argv):
 				usage()
 				sys.exit()
 		
-		if ( '' == siteName or '' == osType ):
-			sys.exit("siteName and osType are mandatory args")
-		return ( sslPort, httpPort, uname, gname, incomingInterface, siteName, osType )
+		if ( '' == siteName or '' == osType or 
+			'' == orgName or '' == bundleUrl ):
+			sys.exit("siteName, osType, orgName and bundleUrl are mandatory args")
+		config = convergence_installer.Config(ME, CONV_DIR, httpPort, sslPort, uname, gname, incomingInterface, siteName, osType, orgName, bundleUrl)
+		if ( not config.verify() ):
+			sys.exit("Config looks bad")
+		return config
 
 	except getopt.GetoptError:
 		usage()
 		sys.exit(2)
 
 def usage():
+	# Bit of a kludge to get the supported os's
+	os = convergence_installer.OS(ME, '')
 	print "\nconvergence-installer.py " + str(version) + "\n"
 	print "usage: " + ME + " <options>\n"
-	print "Options:"
+	print "Options: (with [default])\n"
 	print "-n <sitename>  The DNS name of the host to run the service"
+	print "-N <orgname>  The name of the organisation or person who hosts the service"
+	print "-b <bundle-url> The URL at which the bundle file will be published"
 	print "-o <ostype>    The type of OS into which to install"
-	print "-p <http_port> HTTP port to listen on (default 80)."
-	print "-s <ssl_port>  SSL port to listen on (default 443)."
-	print "-i <address>   IP address to listen on for incoming connections (optional)."
+	print "-p <http_port> HTTP port to listen on [80]."
+	print "-s <ssl_port>  SSL port to listen on [443]."
+	print "-i <address>   IP address to listen on for incoming connections [all]."
 	# These options are ignored until ready to integrate them into 
 	# the service config
-	print "-u <username>  Name of user to drop privileges to (defaults to 'nobody')"
-	print "-g <group>     Name of group to drop privileges to (defaults to 'nogroup')"
+	print "-u <username>  Name of user to drop privileges to ['nobody']"
+	print "-g <group>     Name of group to drop privileges to ['nogroup']"
 	print "-h	       Print this help message."
 	print ""
+	print "Suppored os types are:\n\n\t" + os.get_supported_os() + "\n"
 
-def make_os_installer(os_type, convDir, siteName):
+def make_os_installer(config):
 	retval = 0;
-	if ( os_type == 'rhel6' ):
-		retval = convergence_installer.RHEL6(ME, convDir, siteName)
+	if ( config.os == 'rhel6' ):
+		retval = convergence_installer.RHEL6(ME, config)
 	else:
-		sys.exit('Unsupported OS for installer: ' + os_type)
+		sys.exit('Unsupported OS for installer: ' + config.os)
 	return retval
+
+def report():
+	print "You still need to:\n"
+	print "* copy the notary file to the publish location"
+	print "* check the security on the service install location (key/cert)"
 
 # Use the core and OS (child) objects to do all the things that need be done
 def main(argv):
-	(sslPort, httpPort, uname, gname, 
-		incomingInterface, siteName, osType) = parseOptions(argv)
-	config = convergence_installer.Config(ME, httpPort, sslPort, uname, gname,
-		incomingInterface, siteName, osType)
-	if ( not config.verify() ):
-		sys.exit('Config looks bad')
-	core = convergence_installer.Core(ME, CONV_DIR, siteName)
-	os_inst = make_os_installer(osType, CONV_DIR, siteName)
-	# We dont create the bundle because its a prompted interface
-	# core.create_bundle()
-	retval = core.make_staging_dir() and core.gen_cert() and core.install_convergence_software() and os_inst.depend_install() and core.createdb() and os_inst.make_service() and os_inst.install_service_data() and os_inst.make_service_config(config) and os_inst.service_start() and os_inst.service_auto_start()
-	# report(retval)
+	config = parseOptions(argv)
+	core = convergence_installer.Core(ME, config)
+	os_inst = make_os_installer(config)
+	# core.gen_cert() and core.install_convergence_software() and os_inst.depend_install()
+	retval = core.make_staging_dir() and core.createdb() and os_inst.create_bundle() and os_inst.make_service() and os_inst.install_service_data() and os_inst.make_service_config() and os_inst.service_start() and os_inst.service_auto_start()
+	if ( retval ):
+		report()
 	return retval
 
 if __name__ == '__main__':

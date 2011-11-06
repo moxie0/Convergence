@@ -37,7 +37,7 @@ start() {
     [ -x $exec ] || exit 5
     [ -f $config ] || exit 6
     echo -n $"Starting $prog: "
-    $exec -p $PORT -s $SSL -c $CERT -k $KEY -i "$BIND" -u "$USER" -g "$GROUP" && \
+    $exec -p $PORT -s $SSL -c $CERT -k $KEY -i "$INTERFACE" -u "$USER" -g "$GROUP" && \
     	success || failure
     retval=$?
     echo

@@ -76,9 +76,10 @@ def parseOptions(argv):
 				usage()
 				sys.exit()
 		
-		if ( '' == siteName or '' == osType or 
-			'' == orgName or '' == bundleUrl ):
-			sys.exit("siteName, osType, orgName and bundleUrl are mandatory args")
+		if ( '' == siteName or '' == osType or '' == orgName ):
+			sys.exit("siteName, orgName and osType are mandatory args")
+		if ( '' == bundleUrl ):
+			bundleUrl = 'https://' + siteName + '/' + siteName + '.notary'
 		config = convergence_installer.Config(ME, CONV_DIR, httpPort, sslPort, uname, gname, incomingInterface, siteName, osType, orgName, bundleUrl)
 		if ( not config.verify() ):
 			sys.exit("Config looks bad")
@@ -95,8 +96,8 @@ def usage():
 	print "usage: " + ME + " <options>\n"
 	print "Options: (with [default])\n"
 	print "-n <sitename>  The DNS name of the host to run the service"
-	print "-N <orgname>  The name of the organisation or person who hosts the service"
-	print "-b <bundle-url> The URL at which the bundle file will be published"
+	print "-N <orgname>   The name of the organisation or person who hosts the service"
+	print "-b <bundle-url> The URL at which the bundle file will be published [https://<sitename>/<sitename>.notary]"
 	print "-o <ostype>    The type of OS into which to install"
 	print "-p <http_port> HTTP port to listen on [80]."
 	print "-s <ssl_port>  SSL port to listen on [443]."
@@ -105,32 +106,52 @@ def usage():
 	# the service config
 	print "-u <username>  Name of user to drop privileges to ['nobody']"
 	print "-g <group>     Name of group to drop privileges to ['nogroup']"
+	print "\nor\n"
 	print "-h	       Print this help message."
 	print ""
 	print "Suppored os types are:\n\n\t" + os.get_supported_os() + "\n"
 
 def make_os_installer(config):
 	retval = 0;
-	if ( config.os == 'rhel6' ):
+	# Generic OS, needed to check support
+	os = convergence_installer.OS(ME, config)
+	# Check os install suppport
+	config.os_install = os.translate_supported_os(config.os)
+	# Create the real OS installer
+	if ( config.os_install == 'rhel6' ):
 		retval = convergence_installer.RHEL6(ME, config)
 	else:
-		sys.exit('Unsupported OS for installer: ' + config.os)
+		sys.exit('Unsupported OS')
 	return retval
 
-def report():
+def report(os):
+	bundle = os.bundle_path_final()
+	key = os.key_path_final()
+	svc_data = os.service_data_dir
 	print "You still need to:\n"
-	print "* copy the notary file to the publish location"
-	print "* check the security on the service install location (key/cert)"
+	print "* copy the notary file to the publish location:"
+	print "  E.g cp " + bundle + " /var/www/notary/"
+	print "* check the security on the service data location which has the key and cert"
+	print "  E.g chown -R root:root " + svc_data + " ; chmod -R 644 " + svc_data + " ; chmod 400 " + key
 
 # Use the core and OS (child) objects to do all the things that need be done
 def main(argv):
 	config = parseOptions(argv)
 	core = convergence_installer.Core(ME, config)
 	os_inst = make_os_installer(config)
-	# core.gen_cert() and core.install_convergence_software() and os_inst.depend_install()
-	retval = core.make_staging_dir() and core.createdb() and os_inst.create_bundle() and os_inst.make_service() and os_inst.install_service_data() and os_inst.make_service_config() and os_inst.service_start() and os_inst.service_auto_start()
+	retval = core.make_staging_dir() and \
+		core.gen_cert() and \
+		core.install_convergence_software() and \
+		os_inst.depend_install() and \
+		core.createdb() and \
+		os_inst.create_bundle() and \
+		os_inst.make_service() and \
+		os_inst.install_service_data() and \
+		os_inst.make_service_config() and \
+		os_inst.service_start() and \
+		os_inst.service_auto_start()
 	if ( retval ):
-		report()
+		report(os_inst)
 	return retval
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 
-import os, sys, shutil
+import os, sys, shutil, json
 
 # the name of the service
 conv_svc		= 'convergence'
@@ -76,6 +76,7 @@ class Config(Base):
 		self.interf	= interf
 		self.name	= name
 		self.os		= os
+		self.os_install = ''
 
 	def is_port(self, port):
 		return ( 0 < port and port < 65536 )
@@ -218,6 +219,14 @@ class OS(Base):
 	def get_supported_os(self):
 		return ','.join(self.supported_os.keys())
 
+	def translate_supported_os(self, os):
+		retval = None
+		try:
+			retval = self.supported_os[os]
+		except KeyError:
+			self.err("OS type '" + os + "' is unsupported")
+		return  retval
+
 	# where is the final location of the cert
 	def cert_path(self):
 		return os.path.join(self.data_dir, self.config.cert_file())
@@ -229,10 +238,10 @@ class OS(Base):
 	# please install my software dependencies
 	def depend_install(self):
 		cmd = self.depend_install_cmd + ' ' + ' '.join(self.depend_packages)
-		print cmd
 		retval = 1
-		#if ( 0 != os.system(cmd) ):
-			#self.err('Failure installing dependencies')
+		if ( 0 != os.system(cmd) ):
+			self.err('Failure installing dependencies')
+			retval = 0
 		return retval
 
 	# Use the OS specific service definition, and create the init file
@@ -250,6 +259,14 @@ class OS(Base):
 		retval = os.path.isfile(dst)
 		self.report(retval, msg)
 		return retval
+
+	# Where is the bundle after successful install
+	def bundle_path_final(self):
+		return os.path.join(self.service_data_dir, self.config.bundle_file())
+
+	# Where is the key after successful install
+	def key_path_final(self):
+		return os.path.join(self.service_data_dir, self.config.key_file())
 
 	# after building all the useful data in the staging area
 	# we move it to a system directory from which its data can
@@ -305,43 +322,56 @@ class OS(Base):
 		self.report(retval, msg)
 		return retval	
 
-	def get_pem_transformed(self):
-		return 'cert--\\nfoobar\\n--cert'
-
-	def bundle_host_format(self):
-		pem_transformed = self.get_pem_transformed()
-		return '{"host": "' + self.config.name + '", ' + '"http_port": ' + str(self.config.http) + ', ' + '"ssl_port": ' + str(self.config.ssl) + ', ' + '"certificate": ' + pem_transformed + '"}'
-
-	def bundle_format(self):
-		return '{"version": ' + bundle_version + ', ' + '"hosts": [' + self.bundle_host_format() + '], ' + '"name": "' + self.config.org_name + '", ' + '"bundle_location": "' + self.config.bundle_url + '"}'
+	def get_cert(self):
+		cfg = self.config # shorthand
+		cert = os.path.join(cfg.staging(), cfg.cert_file())
+		f = open(cert, 'r')
+		data = f.read()
+		f.close()
+		return data
 
 	# Create the bundle.  Bad plan.  Re-implements the bundle creator.
 	# But no choice as the new version is entirely interactive  ....
 	# Could do an echo blah | convergence-bundle.py, but that will break
 	# just as easily if things change.  Need a fully parameterised bundle
 	# creation script (or a library call).
+	def bundle_host(self):
+		return {"host": self.config.name, "http_port": self.config.http , "ssl_port": self.config.ssl, "certificate": self.get_cert() }
+
+	def make_bundle(self):
+		return {"version": bundle_version, "hosts": [ self.bundle_host() ], "name": self.config.org_name , "bundle_location": self.config.bundle_url }
+
 	def create_bundle(self):
 		msg = "Notary bundle exists (in staging dir)"
+		bundle = self.make_bundle()
 		dst = os.path.join(self.config.staging(), self.config.bundle_file())
 		f = open(dst, 'w')
 		retval = 0
-		f.write(self.bundle_format())
+		f.write(json.dumps(bundle))
 		f.close()
 		retval = os.path.isfile(dst)
 		self.report(retval, msg)
 		return retval	
 
-# OS specifics for RedHat Enterprise Linux 6 (and recent Fedora Core releases)
-class RHEL6(OS):
+# First OS sub-class: things that should be generally the same for SysV type
+# Unixes
+class sysv_nix(OS):
 
 	def __init__(self, ME, config):
 		OS.__init__(self, ME, config)
-		self.service_init_src		= os.path.join([self.config.staging, 'init-script', conv_svc + '.rhel6'])
 		self.service_init_dst		= '/etc/rc.d/init.d/' + conv_svc
-		self.service_config_file	= '/etc/sysconfig/' + conv_svc
-		self.service_start_cmd		= 'service ' + conv_svc + ' start'
-		self.service_auto_start_cmd	= 'chkconfig ' + conv_svc + ' on'
 		self.service_data_dir		= '/etc/' + conv_svc
+		self.service_start_cmd		= self.service_init_dst + ' start'
+
+
+# OS specifics for RedHat Enterprise Linux 6 (and recent Fedora Core releases)
+class RHEL6(sysv_nix):
+
+	def __init__(self, ME, config):
+		sysv_nix.__init__(self, ME, config)
+		self.service_init_src		= os.path.join([self.config.staging, 'init-script', conv_svc + '.rhel6'])
+		self.service_config_file	= '/etc/sysconfig/' + conv_svc
+		self.service_auto_start_cmd	= 'chkconfig ' + conv_svc + ' on'
 		self.depend_packages		= [
 			'python-twisted-web', 
 			'm2crypto'

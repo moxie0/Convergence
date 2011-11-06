@@ -16,6 +16,8 @@
 # USA
 #
 
+import os, logging
+
 class Verifier:
     """The base class for all verifier back ends."""
 
@@ -41,3 +43,22 @@ class Verifier:
 
         """
         raise NotImplementedError("Abstract method!")
+
+    def getDescription(self):
+        """
+        getDescription is called if a GET request is received on the unencrypted port.
+        The purpose of this is to inform the user about the notary.
+
+        :Returns Type:
+            String
+        """
+        try:
+            self.htmlFile = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.__class__.__name__ + ".html")
+            logging.debug("Trying to serve file: " + self.htmlFile + "...")
+            self.fh = open(self.htmlFile)
+            self.content = self.fh.read()
+            self.fh.close()
+            return self.content
+        except IOError:
+            logging.debug("Did not find file, serving class name")
+            return None

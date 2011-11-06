@@ -162,6 +162,7 @@ class Core(Base):
 		self.core_createdb		= self.util_prefix + '-createdb'
 		self.core_notary		= self.util_prefix + '-notary'
 		self.config			= config
+		self.conv_db_dst		= conv_db
 
 	# We stuff data into the staging area during the install.  Create it.
 	def make_staging_dir(self):
@@ -200,7 +201,7 @@ class Core(Base):
 	# Create the convergence DB
 	def createdb(self):
 		msg = conv_name + " DB exists"
-		exists = os.path.isfile(conv_db)
+		exists = os.path.isfile(self.conv_db_dst)
 		retval = 1
 		if ( exists ):
 			self.info(conv_name  + " DB already exists, leaving")

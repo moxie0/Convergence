@@ -135,15 +135,25 @@ def make_os_installer(config):
 		sys.exit('Unsupported OS')
 	return retval
 
-def report(os):
+def report(core, os):
+	service_defn = os.service_init_dst
+	service_data = os.service_data_dir
+	service_config = os.service_config_file
+	conv_db = core.conv_db_dst
 	bundle = os.bundle_path_final()
 	key = os.key_path_final()
-	svc_data = os.service_data_dir
+	print "\nINSTALL REPORT\n=============\n"
+	print "\nInstallation is complete, and the service is actually running"
+	print "\nService:\n"
+	print "* init script = " + service_defn
+	print "* data (cert, key and bundle) in " + service_data
+	print "* config = " + service_config
+	print "* database = " + conv_db + "\n"
 	print "You still need to:\n"
 	print "* copy the notary file to the publish location:"
-	print "  E.g cp " + bundle + " /var/www/notary/"
+	print "  E.g cp " + bundle + " /some/web-site/location/"
 	print "* check the security on the service data location which has the key and cert"
-	print "  E.g chown -R root:root " + svc_data + " ; chmod -R 644 " + svc_data + " ; chmod 400 " + key
+	print "  E.g chown -R root:root " + service_data + " ; chmod -R 644 " + service_data + " ;\n      chmod 400 " + key
 
 # Use the core and OS (child) objects to do all the things that need be done
 def main(argv):
@@ -165,7 +175,7 @@ def main(argv):
 			os_inst.service_start() and \
 			os_inst.service_auto_start()
 	if ( retval ):
-		report(os_inst)
+		report(core, os_inst)
 	return retval
 
 if __name__ == '__main__':

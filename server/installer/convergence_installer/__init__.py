@@ -410,6 +410,7 @@ class RHEL6(sysv_nix):
 		self.service_auto_start_cmd	= 'chkconfig ' + conv_svc + ' on'
 		self.depend_packages		= [
 			'python-twisted-web', 
+			'python-twisted-names', 
 			'm2crypto'
 			]
 		self.depend_install_cmd		= 'yum -y install'

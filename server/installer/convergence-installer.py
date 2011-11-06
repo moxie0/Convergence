@@ -164,8 +164,8 @@ def main(argv):
 		retval = os_inst.auto_create_user_group()
 	if ( retval ):
 		retval = core.make_staging_dir() and \
-			core.gen_cert() and \
 			core.install_convergence_software() and \
+			core.gen_cert() and \
 			os_inst.depend_install() and \
 			core.createdb() and \
 			os_inst.create_bundle() and \

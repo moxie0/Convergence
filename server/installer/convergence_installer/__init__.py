@@ -1,5 +1,5 @@
 
-import os, sys, shutil, json
+import os, sys, shutil, json, grp, pwd
 
 # the name of the service
 conv_svc		= 'convergence'
@@ -18,7 +18,7 @@ class Base:
 		self.me		= ME
 
 	def msg(self, s):
-		print >> sys.stderr, s + '\n';
+		print >> sys.stderr, s;
 
 	def err(self, s):
 		self.msg(': '.join([self.me, 'Error', s]))
@@ -62,20 +62,23 @@ class Base:
 # The config supplied to the installer for verification and access
 class Config(Base):
 	def __init__(self, ME, unpack_dir, http, ssl, uname, gname, 
-		interf, name, os, org_name, bundle_url):
+		interf, name, os, org_name, bundle_url, auto_create):
 		Base.__init__(self, ME)
 		# Not config, but needed everywhere
-		self.unpack_dir	= unpack_dir
+		self.unpack_dir		= unpack_dir
 		# the config data
-		self.org_name	= org_name
-		self.bundle_url	= bundle_url
-		self.http	= http
-		self.ssl	= ssl
-		self.uname	= uname
-		self.gname	= gname
-		self.interf	= interf
-		self.name	= name
-		self.os		= os
+		self.org_name		= org_name
+		self.bundle_url		= bundle_url
+		self.http		= http
+		self.ssl		= ssl
+		self.auto_create	= auto_create
+		self.uname		= uname
+		self.uname_exists	= 0
+		self.gname		= gname
+		self.gname_exists	= 0
+		self.interf		= interf
+		self.name		= name
+		self.os			= os
 		self.os_install = ''
 
 	def is_port(self, port):
@@ -114,8 +117,25 @@ class Config(Base):
 		if ( not self.is_port(self.ssl) ):
 			self.err("sslPort value " + self.ssl + msg_port)
 			retval = 0
-		# would like to check uname / gname but dont have a 
-		# platform independent mechanism (getent passwd | grep 'uname:'
+		# Check about user and group
+		msg_not_exist = "' does not exist."
+		help_auto = "Use -a to auto create missing user/group(s)"
+		try:
+			grp.getgrnam(self.gname)
+			self.gname_exists = 1
+		except KeyError:
+			if ( not self.auto_create ):
+				self.err("Group '" + self.gname + msg_not_exist)
+				self.info(help_auto)
+				retval = 0
+		try:
+			pwd.getpwnam(self.uname)
+			self.uname_exists = 1
+		except KeyError:
+			if ( not self.auto_create ):
+				self.err("User '" + self.uname + msg_not_exist)
+				self.info(help_auto)
+				retval = 0
 		if ( 0 < len(self.interf) and not self.looks_like_IPv4(self.interf) ):
 			self.err("incomingInterface does not look like IPv4")
 			retval = 0
@@ -216,17 +236,6 @@ class OS(Base):
 			'fc14':  'rhel6'
 		}
 
-	def get_supported_os(self):
-		return ','.join(self.supported_os.keys())
-
-	def translate_supported_os(self, os):
-		retval = None
-		try:
-			retval = self.supported_os[os]
-		except KeyError:
-			self.err("OS type '" + os + "' is unsupported")
-		return  retval
-
 	# where is the final location of the cert
 	def cert_path(self):
 		return os.path.join(self.data_dir, self.config.cert_file())
@@ -234,6 +243,28 @@ class OS(Base):
 	# where is the final location of the key
 	def key_path(self):
 		return os.path.join(self.data_dir, self.config.key_file())
+
+	# Where is the bundle after successful install
+	def bundle_path_final(self):
+		return os.path.join(self.service_data_dir, self.config.bundle_file())
+
+	# Where is the key after successful install
+	def key_path_final(self):
+		return os.path.join(self.service_data_dir, self.config.key_file())
+
+	# Return a list of supported OS's
+	def get_supported_os(self):
+		return ','.join(self.supported_os.keys())
+
+	# translate a supported OS to its installer type 
+	# i.e some are the same: e.g rhel6 and fc14 are both 'rhel6' for install
+	def translate_supported_os(self, os):
+		retval = None
+		try:
+			retval = self.supported_os[os]
+		except KeyError:
+			self.err("OS type '" + os + "' is unsupported")
+		return  retval
 
 	# please install my software dependencies
 	def depend_install(self):
@@ -244,29 +275,33 @@ class OS(Base):
 			retval = 0
 		return retval
 
+	# auto-create any missing user/group
+	#
+	# This requires that the create_{group,user} is implemented for 
+	# all child classes (!!!!!!)
+	def auto_create_user_group(self):
+		retval = 1
+		if ( not self.config.gname_exists ):
+			retval = self.create_group(self.config.gname)
+		if ( not self.config.uname_exists and retval ):
+			retval = self.create_nonpriv_user(
+				self.config.uname, self.config.gname
+			)
+		return retval
+
 	# Use the OS specific service definition, and create the init file
 	def make_service(self):
 		msg = conv_name + " service launch script exists"
 		src = self.service_init_src
 		dst = self.service_init_dst
 		retval = 0
-		exists = os.path.isfile(dst)
-		if ( exists ):
-			self.info(conv_name  + " service exists, leaving")
-			retval = 1
-		else:
+		try:
 			shutil.copy2(src, dst)
-		retval = os.path.isfile(dst)
+			retval = 1
+		except IOError:
+			self.err("Failure copying " + src + ' to ' + dst)
 		self.report(retval, msg)
 		return retval
-
-	# Where is the bundle after successful install
-	def bundle_path_final(self):
-		return os.path.join(self.service_data_dir, self.config.bundle_file())
-
-	# Where is the key after successful install
-	def key_path_final(self):
-		return os.path.join(self.service_data_dir, self.config.key_file())
 
 	# after building all the useful data in the staging area
 	# we move it to a system directory from which its data can
@@ -369,7 +404,7 @@ class RHEL6(sysv_nix):
 
 	def __init__(self, ME, config):
 		sysv_nix.__init__(self, ME, config)
-		self.service_init_src		= os.path.join([self.config.staging, 'init-script', conv_svc + '.rhel6'])
+		self.service_init_src		= os.path.join(self.config.unpack_dir, 'init-script', conv_svc + '.rhel6')
 		self.service_config_file	= '/etc/sysconfig/' + conv_svc
 		self.service_auto_start_cmd	= 'chkconfig ' + conv_svc + ' on'
 		self.depend_packages		= [
@@ -377,4 +412,18 @@ class RHEL6(sysv_nix):
 			'm2crypto'
 			]
 		self.depend_install_cmd		= 'yum -y install'
+
+	def create_nonpriv_user(self, uname, gname):
+		msg = "Create non-priviledged user '" + uname + "'"
+		cmd = 'useradd -d /tmp -g ' + gname + ' -M -N -s /sbin/nologin ' + uname
+		retval = ( 0 == os.system(cmd) )
+		self.report(retval, msg)
+		return retval
+
+	def create_group(self, gname):
+		msg = "Create group '" + gname + "'"
+		cmd = 'groupadd ' + gname
+		retval = ( 0 == os.system(cmd) )
+		self.report(retval, msg)
+		return retval
 

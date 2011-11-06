@@ -33,7 +33,7 @@ if sys.version_info < (2, 6):
 import convergence_installer
 import sys, string, os, getopt, pwd
 
-version		= "0.3"
+version		= "0.1"
 ME 		= os.path.basename(sys.argv[0])
 CONV_DIR	= os.path.join(os.path.dirname(sys.argv[0]), '..')
 
@@ -49,9 +49,10 @@ def parseOptions(argv):
 	osType			= ''
 	orgName			= ''
 	bundleUrl		= ''
+	auto_create		= 0
 
 	try:
-		opts, args = getopt.getopt(argv, "N:b:p:s:i:u:g:n:o:h")
+		opts, args = getopt.getopt(argv, "N:b:p:s:i:u:g:n:o:ha")
 
 		for opt, arg in opts:
 			if opt in("-n"):
@@ -72,6 +73,8 @@ def parseOptions(argv):
 				uname = arg # user name
 			elif opt in ("-g"):
 				gname = arg # group name
+			elif opt in ("-a"):
+				auto_create = 1 # auto-create user/group
 			elif opt in ("-h"):
 				usage()
 				sys.exit()
@@ -80,7 +83,11 @@ def parseOptions(argv):
 			sys.exit("siteName, orgName and osType are mandatory args")
 		if ( '' == bundleUrl ):
 			bundleUrl = 'https://' + siteName + '/' + siteName + '.notary'
-		config = convergence_installer.Config(ME, CONV_DIR, httpPort, sslPort, uname, gname, incomingInterface, siteName, osType, orgName, bundleUrl)
+		config = convergence_installer.Config(
+			ME, CONV_DIR, httpPort, sslPort, 
+			uname, gname, incomingInterface, 
+			siteName, osType, orgName, bundleUrl,
+			auto_create)
 		if ( not config.verify() ):
 			sys.exit("Config looks bad")
 		return config
@@ -94,11 +101,14 @@ def usage():
 	os = convergence_installer.OS(ME, '')
 	print "\nconvergence-installer.py " + str(version) + "\n"
 	print "usage: " + ME + " <options>\n"
-	print "Options: (with [default])\n"
+	print "Options: "
+	print
+	print "Mandatory args:"
 	print "-n <sitename>  The DNS name of the host to run the service"
 	print "-N <orgname>   The name of the organisation or person who hosts the service"
-	print "-b <bundle-url> The URL at which the bundle file will be published [https://<sitename>/<sitename>.notary]"
 	print "-o <ostype>    The type of OS into which to install"
+	print "\nOptional args: (with [default])\n"
+	print "-b <bundle-url> The URL at which the bundle file will be published [https://<sitename>/<sitename>.notary]"
 	print "-p <http_port> HTTP port to listen on [80]."
 	print "-s <ssl_port>  SSL port to listen on [443]."
 	print "-i <address>   IP address to listen on for incoming connections [all]."
@@ -106,6 +116,7 @@ def usage():
 	# the service config
 	print "-u <username>  Name of user to drop privileges to ['nobody']"
 	print "-g <group>     Name of group to drop privileges to ['nogroup']"
+	print "-a             Auto-create user and/or group if they dont exist [no]"
 	print "\nor\n"
 	print "-h	       Print this help message."
 	print ""
@@ -139,17 +150,20 @@ def main(argv):
 	config = parseOptions(argv)
 	core = convergence_installer.Core(ME, config)
 	os_inst = make_os_installer(config)
-	retval = core.make_staging_dir() and \
-		core.gen_cert() and \
-		core.install_convergence_software() and \
-		os_inst.depend_install() and \
-		core.createdb() and \
-		os_inst.create_bundle() and \
-		os_inst.make_service() and \
-		os_inst.install_service_data() and \
-		os_inst.make_service_config() and \
-		os_inst.service_start() and \
-		os_inst.service_auto_start()
+	if ( config.auto_create ):
+		retval = os_inst.auto_create_user_group()
+	if ( retval ):
+		retval = core.make_staging_dir() and \
+			core.gen_cert() and \
+			core.install_convergence_software() and \
+			os_inst.depend_install() and \
+			core.createdb() and \
+			os_inst.create_bundle() and \
+			os_inst.make_service() and \
+			os_inst.install_service_data() and \
+			os_inst.make_service_config() and \
+			os_inst.service_start() and \
+			os_inst.service_auto_start()
 	if ( retval ):
 		report(os_inst)
 	return retval

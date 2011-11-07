@@ -124,14 +124,11 @@ def usage():
 
 def make_os_installer(config):
 	retval = 0;
-	# Generic OS, needed to check support
-	os = convergence_installer.OS(ME, config)
-	# Check os install suppport
-	config.os_install = os.translate_supported_os(config.os)
 	# Create the real OS installer
 	if ( config.os_install == 'rhel6' ):
 		retval = convergence_installer.RHEL6(ME, config)
 	else:
+		# UNREACHED: should never happen as the config verifies the OS
 		sys.exit('Unsupported OS')
 	return retval
 

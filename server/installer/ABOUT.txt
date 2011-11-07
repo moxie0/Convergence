@@ -1,0 +1,50 @@
+
+This file provides a brief overview of the installer for developers.
+
+convergence-installer.py
+
+	is the command-line callable for the user.  Heavy paramterisation
+	of all things required for an install, including the OS type.
+
+convergence_installer/
+
+	the library that provides all the tools used by the command-line tool.
+
+
+Classes in convergence_installer:
+
+Base:
+
+	Provides simple messaging and a few file operation primitives
+
+	Is the base class for all other classes.
+
+Config(Base):
+
+	Is provided the details from the command-line parser.  Holds them.
+	Command-line args are verified using the verify() method.
+
+Core(Base):
+
+	Knows about the convergence-<blah>.py tools (gencert etc.) and uses
+	them during the install.
+
+OS(Base):
+
+	The top level of the OS abstraction.  A whole bunch of members,
+	and a few methods, are defined which need to be overridden by
+	child classes.
+
+	Also defines all of the routines for doing an install based on the
+	members and methods which are overridden in the child classes.
+
+sysv_nix(OS):
+
+	Defines the members that are thought to be common for System V
+	versions of Linux.  E.g install service init script to 
+	/etc/rc.d/init.d
+
+RHEL6(sysv_nix):
+
+	Specifices of the members and methods for RHEL6 (and recent
+	Fedora Core).

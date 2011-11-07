@@ -1,14 +1,12 @@
 
 import os, sys, shutil, json, grp, pwd
 
-# the name of the service
-conv_svc		= 'convergence'
 # the name of the product
 conv_name		= 'Convergence'
-# install script
-install_convergence	= 'python ./setup.py install'
-# database path (*nix type, unknown elsewhere)
-conv_db			= '/var/lib/convergence/convergence.db'
+# the name of the service
+conv_svc		= 'convergence'
+
+# Should not need to know this (we're creating bundles and shouldn't be)
 # notary 'bundle' file version number
 bundle_version		= '1'
 
@@ -48,7 +46,7 @@ class Base:
 			retval = 0
 		return retval
 
-	# convenience function; make a dir
+	# convenience function; copy a file
 	def copy_file(self, src_dir, dst_dir, f):
 		src_path = os.path.join(src_dir, f)
 		if ( os.path.isdir(src_dir) and os.path.isdir(dst_dir)):
@@ -60,11 +58,15 @@ class Base:
 		return retval
 
 # The config supplied to the installer for verification and access
+# i.e all the things that we need to know to perform an install
+#
+# also supplies some simple functions needed both by Core and OS
+# (as they both have a Config object)
 class Config(Base):
 	def __init__(self, ME, unpack_dir, http, ssl, uname, gname, 
 		interf, name, os, org_name, bundle_url, auto_create):
 		Base.__init__(self, ME)
-		# Not config, but needed everywhere
+		# Not config, but needed in various places
 		self.unpack_dir		= unpack_dir
 		# the config data
 		self.org_name		= org_name
@@ -78,9 +80,39 @@ class Config(Base):
 		self.gname_exists	= 0
 		self.interf		= interf
 		self.name		= name
+		# The 'string' describing the os by the user
 		self.os			= os
-		self.os_install = ''
+		# the actual 'string' for the os that is need for the install
+		# see OS.translate_supported_os()
+		self.os_install 	= ''
 
+	# helper routines
+	def key_file(self):
+		return self.name + '.key'
+
+	def cert_file(self):
+		return self.name + '.pem'
+
+	def bundle_file(self):
+		return self.name + '.notary'
+
+	# We use a staging dir to create the stuff we need and then later
+	# move it to its destination.  The staging dir is under the 
+	# unpack_dir and has the name of the DNS name of the convergence site
+	def staging(self):
+		return os.path.join(self.unpack_dir, self.name)
+
+	# Convenvience function: cd to 'directory' and do something
+	def cd_dir_and(self, directory, cmd):
+		return '( cd ' + directory + ' && ' + cmd + ' )'
+
+	# Convenvience function: cd to staging and do something
+	def cd_staging_and(self, cmd):
+		return self.cd_dir_and(self.staging(), cmd)
+
+	#
+	# Verify config entries
+	#
 	def is_port(self, port):
 		return ( 0 < port and port < 65536 )
 
@@ -92,23 +124,25 @@ class Config(Base):
 		split = domain.split('.')
 		return ( 1 < len(split) )
 
-	def key_file(self):
-		return self.name + '.key'
+	def group_exists(self, uname):
+		retval = 1
+		try:
+			grp.getgrnam(self.gname)
+		except KeyError:
+			retval = 0
+		return retval
 
-	def cert_file(self):
-		return self.name + '.pem'
+	def user_exists(self, uname):
+		retval = 1
+		try:
+			pwd.getpwnam(self.uname)
+		except KeyError:
+			retval = 0
+		return retval
 
-	def bundle_file(self):
-		return self.name + '.notary'
-
-	def staging(self):
-		return os.path.join(self.unpack_dir, self.name)
-
-	# Convenvience function
-	def cd_staging_and(self, cmd):
-		return '( cd ' + self.staging() + ' && ' + cmd + ' )'
-
+	# check those elements of the config as best we can
 	def verify(self):
+		# Check port numbers
 		msg_port = " is not a valid port"
 		retval = 1
 		if ( not self.is_port(self.http) ):
@@ -120,40 +154,40 @@ class Config(Base):
 		# Check about user and group
 		msg_not_exist = "' does not exist."
 		help_auto = "Use -a to auto create missing user/group(s)"
-		try:
-			grp.getgrnam(self.gname)
-			self.gname_exists = 1
-		except KeyError:
+		if ( not self.user_exists(self.uname) ):
+			self.err("User '" + self.uname + msg_not_exist)
 			if ( not self.auto_create ):
-				self.err("Group '" + self.gname + msg_not_exist)
 				self.info(help_auto)
-				retval = 0
-		try:
-			pwd.getpwnam(self.uname)
+		else:
 			self.uname_exists = 1
-		except KeyError:
+		if ( not self.group_exists(self.gname) ):
+			self.err("Group '" + self.gname + msg_not_exist)
 			if ( not self.auto_create ):
-				self.err("User '" + self.uname + msg_not_exist)
 				self.info(help_auto)
-				retval = 0
+		else:
+			self.gname_exists = 1
+		# Incoming interface
 		if ( 0 < len(self.interf) and not self.looks_like_IPv4(self.interf) ):
 			self.err("incomingInterface does not look like IPv4")
 			retval = 0
 		if ( not self.looks_like_DNS(self.name) ):
 			self.err("site name does not look like a DNS domain")
 			retval = 0
+		# requested os is known ??
+		os = OS(self.me, self)
+		config.os_install = os.translate_supported_os(config.os)
+		retval = ( config.os_install is not None )
 		# the bundle_url should be checked in some way
 		return retval
 
-	# would love to check 'os' but am not sure of the correct way to do it
-
-# Non-OS specific actions required for the full install
+# The class that knows about Convergence tools and how to use them for install
 class Core(Base):
 
 	def __init__(self, ME, config):
 		Base.__init__(self, ME)
-		# NON-PORTABLE
+		# Where will the software be installed?
 		self.install_dir		= '/usr/bin'
+		# prefix for path to all the convergence command-line tools
 		self.util_prefix		= os.path.join(
 			self.install_dir, conv_svc 
 		)
@@ -161,8 +195,12 @@ class Core(Base):
 		self.core_bundle		= self.util_prefix + '-bundle'
 		self.core_createdb		= self.util_prefix + '-createdb'
 		self.core_notary		= self.util_prefix + '-notary'
+		# install script
+		self.install_convergence	= 'python ./setup.py install'
+		# database path (*nix type, unknown elsewhere)
+		self.conv_db_path		= '/var/lib/convergence/convergence.db'
+		# Our copy of the config
 		self.config			= config
-		self.conv_db_dst		= conv_db
 
 	# We stuff data into the staging area during the install.  Create it.
 	def make_staging_dir(self):
@@ -183,25 +221,28 @@ class Core(Base):
 	# Generate the certs using the convergence-gencert tool
 	def gen_cert(self):
 		# self.cert_warning()
-		cmd_args = ' -c ' + self.config.cert_file() + ' -k ' + self.config.key_file()
+		msg = "Generating certificate and key files"
+		cmd_args = ' -c ' + self.config.cert_file() + \
+			' -k ' + self.config.key_file()
 		cmd = self.config.cd_staging_and(self.core_gencert + cmd_args)
 		retval = ( 0 == os.system(cmd) )
-		if ( not retval ):
-			self.err("Error generating certificates")
+		self.report(retval, msg)
 		return retval
 
 	# Install the base software
 	def install_convergence_software(self):
-		cmd = '( cd ' + self.config.unpack_dir+' && '+ install_convergence + ')'
+		msg = "Installing " + conv_name + " software"
+		cmd = self.config.cd_dir_and(
+			self.config.unpack_dir, self.install_convergence
+		)
 		retval = ( 0 == os.system(cmd) )
-		if ( not retval ):
-			self.err("Install of " + conv_svc + " failed");
+		self.report(retval, msg)
 		return retval	
 
 	# Create the convergence DB
 	def createdb(self):
-		msg = conv_name + " DB exists"
-		exists = os.path.isfile(self.conv_db_dst)
+		msg = conv_name + " DB shall exist"
+		exists = os.path.isfile(self.conv_db_path)
 		retval = 1
 		if ( exists ):
 			self.info(conv_name  + " DB already exists, leaving")
@@ -211,7 +252,7 @@ class Core(Base):
 		return retval	
 
 # Parent for all OS variants.  Provides services for the OS specific
-# components of the installer (e.g where to do things).  To be sub-classed
+# components of the installer (e.g where to put things).  To be sub-classed
 # for each OS variant.
 class OS(Base):
 
@@ -219,15 +260,24 @@ class OS(Base):
 		Base.__init__(self, ME)
 		# to be overridden/defined by child classes, as required
 		# lots of NON-PORTABLE
+		#
+		# The place where we put the cert, key and bundle
 		self.data_dir			= '/etc/' + conv_svc
-		self.service_init_dir		= '/etc/rc.d/init.d'
+		# The path to the init script (e.g /etc/rc.d/init.d/convergence)
+		self.service_init_path		= ''
+		# Were in the unpack location is the source file init script
 		self.service_defn_src_file	= ''
+		# Where do we write a loadable config for the init script
 		self.service_config_file	= ''
-		self.service_init_script	= ''
+		# What command will start the service?
 		self.service_start_cmd		= ''
+		# What command will make the service auto start
 		self.service_auto_start_cmd	= ''
+		# What packages are required
 		self.depend_packages		= []
+		# How do we install the packages
 		self.depend_install_cmd		= ''
+		# Here we stash the config
 		self.config			= config
 
 		# Map of os type to the single definition of how to do it
@@ -269,11 +319,33 @@ class OS(Base):
 
 	# please install my software dependencies
 	def depend_install(self):
+		msg = "Installing " + conv_name + " dependencies"
 		cmd = self.depend_install_cmd + ' ' + ' '.join(self.depend_packages)
-		retval = 1
-		if ( 0 != os.system(cmd) ):
-			self.err('Failure installing dependencies')
-			retval = 0
+		retval = ( 0 == os.system(cmd) )
+		self.report(retval, msg)
+		return retval
+
+	# To be overridden by a child class
+	def create_nonpriv_user_cmd(self, uname, gname):
+		return 'echo "Dont know how to create users" && test 1 -eq 0'
+
+	# To be overridden by a child class
+	def create_group_cmd(self, gname):
+		return 'echo "Dont know how to create groups" && test 1 -eq 0'
+
+	def create_nonpriv_user(self, uname, gname):
+		msg = "Create non-priviledged user '" + uname + "'"
+		cmd = self.create_nonpriv_user_cmd(uname, gname)
+		retval = ( 0 == os.system(cmd) )
+		self.report(retval, msg)
+		return retval
+
+	# Same as above.  Abstract better
+	def create_group(self, gname):
+		msg = "Create group '" + gname + "'"
+		cmd = self.create_group_cmd(gname)
+		retval = ( 0 == os.system(cmd) )
+		self.report(retval, msg)
 		return retval
 
 	# auto-create any missing user/group
@@ -281,6 +353,7 @@ class OS(Base):
 	# This requires that the create_{group,user} is implemented for 
 	# all child classes (!!!!!!)
 	def auto_create_user_group(self):
+		msg = "Auto-creating User and/or Group"
 		retval = 1
 		if ( not self.config.gname_exists ):
 			retval = self.create_group(self.config.gname)
@@ -288,13 +361,14 @@ class OS(Base):
 			retval = self.create_nonpriv_user(
 				self.config.uname, self.config.gname
 			)
+		self.report(retval, msg)
 		return retval
 
 	# Use the OS specific service definition, and create the init file
 	def make_service(self):
 		msg = conv_name + " service launch script exists"
 		src = self.service_init_src
-		dst = self.service_init_dst
+		dst = self.service_init_path
 		retval = 0
 		try:
 			shutil.copy2(src, dst)
@@ -395,9 +469,11 @@ class sysv_nix(OS):
 
 	def __init__(self, ME, config):
 		OS.__init__(self, ME, config)
-		self.service_init_dst		= '/etc/rc.d/init.d/' + conv_svc
+		self.service_init_path		= '/etc/rc.d/init.d/' + conv_svc
 		self.service_data_dir		= '/etc/' + conv_svc
-		self.service_start_cmd		= self.service_init_dst + ' start'
+		self.service_start_cmd		= self.service_init_path + ' start'
+		# not sure how supported this is across Linux distros
+		self.service_auto_start_cmd	= 'chkconfig ' + conv_svc + ' on'
 
 
 # OS specifics for RedHat Enterprise Linux 6 (and recent Fedora Core releases)
@@ -407,7 +483,6 @@ class RHEL6(sysv_nix):
 		sysv_nix.__init__(self, ME, config)
 		self.service_init_src		= os.path.join(self.config.unpack_dir, 'init-script', conv_svc + '.rhel6')
 		self.service_config_file	= '/etc/sysconfig/' + conv_svc
-		self.service_auto_start_cmd	= 'chkconfig ' + conv_svc + ' on'
 		self.depend_packages		= [
 			'python-twisted-web', 
 			'python-twisted-names', 
@@ -415,17 +490,9 @@ class RHEL6(sysv_nix):
 			]
 		self.depend_install_cmd		= 'yum -y install'
 
-	def create_nonpriv_user(self, uname, gname):
-		msg = "Create non-priviledged user '" + uname + "'"
-		cmd = 'useradd -d /tmp -g ' + gname + ' -M -N -s /sbin/nologin ' + uname
-		retval = ( 0 == os.system(cmd) )
-		self.report(retval, msg)
-		return retval
+	def create_nonpriv_user_cmd(self, uname, gname):
+		return 'useradd -d /tmp -g ' + gname + ' -M -N -s /sbin/nologin ' + uname
 
-	def create_group(self, gname):
-		msg = "Create group '" + gname + "'"
-		cmd = 'groupadd ' + gname
-		retval = ( 0 == os.system(cmd) )
-		self.report(retval, msg)
-		return retval
+	def create_group_cmd(self, gname):
+		return 'groupadd ' + gname
 

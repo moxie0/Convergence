@@ -6,12 +6,11 @@ Convergence Notary.
 INTENTION
 ---------
 
-The idea is that the would-be Notary 'runner' reads the man page
-and runs one install script with all data required provided on
-the command-line.
+The idea is that the would-be Notary 'runner' runs one install 
+script with all data required provided on the command-line.
 
 The installer then does the rest, leaving the 'runner' with only
-one thing to do: publish the bundle.
+a little to do: publish the bundle, check local security.
 
 LIMITATIONS
 -----------

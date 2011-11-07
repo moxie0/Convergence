@@ -1,0 +1,12 @@
+
+- we are re-implementing the convergence-bundle.py as it is fully 
+  interactive
+- require implementation on at least 2 Linuxes (rhel/fc, ubuntu, + ??)
+  to be happy with the abstraction
+
+Questions
+
+Can one publish the bundle at the convergence site itself?
+If not, why not?
+
+

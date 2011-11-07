@@ -150,7 +150,7 @@ def report(core, os):
 	service_config = os.service_config_file
 	conv_db = core.conv_db_path
 	bundle = os.bundle_path_final()
-	key = os.key_path_final()
+	key = os.key_path()
 	print "\nINSTALL REPORT\n=============\n"
 	print "\nInstallation is complete, and the service is actually running"
 	print "\nService:\n"

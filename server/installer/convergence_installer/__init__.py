@@ -35,6 +35,10 @@ class Base:
 			self.ok(msg)
 		else:
 			self.fail(msg)
+		return status
+
+	def run_and_report(self, cmd, msg):
+		return self.report( ( 0 == os.system(cmd) ), msg)
 
 	# convenience function; make a dir
 	def make_dir(self, d):
@@ -204,8 +208,8 @@ class Core(Base):
 
 	# We stuff data into the staging area during the install.  Create it.
 	def make_staging_dir(self):
-		retval = self.make_dir(self.config.staging())
 		msg = "Create staging dir"
+		retval = self.make_dir(self.config.staging())
 		self.report(retval, msg)
 		return retval
 
@@ -225,9 +229,7 @@ class Core(Base):
 		cmd_args = ' -c ' + self.config.cert_file() + \
 			' -k ' + self.config.key_file()
 		cmd = self.config.cd_staging_and(self.core_gencert + cmd_args)
-		retval = ( 0 == os.system(cmd) )
-		self.report(retval, msg)
-		return retval
+		return self.config.run_and_report(cmd, msg)
 
 	# Install the base software
 	def install_convergence_software(self):
@@ -235,9 +237,7 @@ class Core(Base):
 		cmd = self.config.cd_dir_and(
 			self.config.unpack_dir, self.install_convergence
 		)
-		retval = ( 0 == os.system(cmd) )
-		self.report(retval, msg)
-		return retval	
+		return self.config.run_and_report(cmd, msg)
 
 	# Create the convergence DB
 	def createdb(self):
@@ -247,8 +247,7 @@ class Core(Base):
 		if ( exists ):
 			self.info(conv_name  + " DB already exists, leaving")
 		else:
-			retval = ( 0 == os.system(self.core_createdb) )
-		self.report(retval, msg)
+			retval = self.config.run_and_report(self.core_createdb, msg)
 		return retval	
 
 # Parent for all OS variants.  Provides services for the OS specific
@@ -299,10 +298,6 @@ class OS(Base):
 	def bundle_path_final(self):
 		return os.path.join(self.service_data_dir, self.config.bundle_file())
 
-	# Where is the key after successful install
-	def key_path_final(self):
-		return os.path.join(self.service_data_dir, self.config.key_file())
-
 	# Return a list of supported OS's
 	def get_supported_os(self):
 		return ','.join(self.supported_os.keys())
@@ -321,9 +316,7 @@ class OS(Base):
 	def depend_install(self):
 		msg = "Installing " + conv_name + " dependencies"
 		cmd = self.depend_install_cmd + ' ' + ' '.join(self.depend_packages)
-		retval = ( 0 == os.system(cmd) )
-		self.report(retval, msg)
-		return retval
+		return self.config.run_and_report(cmd, msg)
 
 	# To be overridden by a child class
 	def create_nonpriv_user_cmd(self, uname, gname):
@@ -336,17 +329,14 @@ class OS(Base):
 	def create_nonpriv_user(self, uname, gname):
 		msg = "Create non-priviledged user '" + uname + "'"
 		cmd = self.create_nonpriv_user_cmd(uname, gname)
-		retval = ( 0 == os.system(cmd) )
-		self.report(retval, msg)
-		return retval
+		return self.run_and_report(cmd, msg)
 
 	# Same as above.  Abstract better
 	def create_group(self, gname):
 		msg = "Create group '" + gname + "'"
 		cmd = self.create_group_cmd(gname)
 		retval = ( 0 == os.system(cmd) )
-		self.report(retval, msg)
-		return retval
+		return self.run_and_report(cmd, msg)
 
 	# auto-create any missing user/group
 	#
@@ -420,17 +410,13 @@ class OS(Base):
 	def service_start(self):
 		msg = "Service is just started"
 		cmd = self.service_start_cmd
-		retval = ( 0 == os.system(cmd) )
-		self.report(retval, msg)
-		return retval	
+		return self.run_and_report(cmd, msg)
 
 	# Configure service auto start
 	def service_auto_start(self):
 		msg = "Service will auto-start"
 		cmd = self.service_auto_start_cmd
-		retval = ( 0 == os.system(cmd) )
-		self.report(retval, msg)
-		return retval	
+		return self.run_and_report(cmd, msg)
 
 	def get_cert(self):
 		cfg = self.config # shorthand

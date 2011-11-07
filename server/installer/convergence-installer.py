@@ -77,10 +77,12 @@ def parseOptions(argv):
 				auto_create = 1 # auto-create user/group
 			elif opt in ("-h"):
 				usage()
-				sys.exit()
+				sys.exit(0)
 		
 		if ( '' == siteName or '' == osType or '' == orgName ):
-			sys.exit("siteName, orgName and osType are mandatory args")
+			print "siteName, orgName and osType are mandatory args"
+			print "for help use: " + ME + " -h"
+			sys.exit(2)
 		if ( '' == bundleUrl ):
 			bundleUrl = 'https://' + siteName + '/' + siteName + '.notary'
 		config = convergence_installer.Config(
@@ -99,28 +101,38 @@ def parseOptions(argv):
 def usage():
 	# Bit of a kludge to get the supported os's
 	os = convergence_installer.OS(ME, '')
-	print "\nconvergence-installer.py " + str(version) + "\n"
-	print "usage: " + ME + " <options>\n"
-	print "Options: "
-	print
-	print "Mandatory args:"
-	print "-n <sitename>  The DNS name of the host to run the service"
-	print "-N <orgname>   The name of the organisation or person who hosts the service"
-	print "-o <ostype>    The type of OS into which to install"
-	print "\nOptional args: (with [default])\n"
-	print "-b <bundle-url> The URL at which the bundle file will be published [https://<sitename>/<sitename>.notary]"
-	print "-p <http_port> HTTP port to listen on [80]."
-	print "-s <ssl_port>  SSL port to listen on [443]."
-	print "-i <address>   IP address to listen on for incoming connections [all]."
-	# These options are ignored until ready to integrate them into 
-	# the service config
-	print "-u <username>  Name of user to drop privileges to ['nobody']"
-	print "-g <group>     Name of group to drop privileges to ['nogroup']"
-	print "-a             Auto-create user and/or group if they dont exist [no]"
-	print "\nor\n"
-	print "-h	       Print this help message."
-	print ""
-	print "Suppored os types are:\n\n\t" + os.get_supported_os() + "\n"
+	supported = os.get_supported_os() 
+	s = ["convergence-installer.py " + str(version) + "\n",
+	"Usage: " + ME + " <options>\n",
+	"The convergence-installer.py attempts to help you get a notary",
+	"running quickly.  Software is installed, a certificate, key ",
+	"and bundle are created, and a service is create, lauched and ",
+	"configured for later auto-launch (amongst other things).\n",
+	"A report is produced after a successful install telling you ",
+	"where things are and anything else that needs be done.\n",
+	"Please read the Options carefully and choose what you need.\n",
+	"Options:\n",
+	"Mandatory:\n",
+	"\t-n <sitename>   The DNS name of the host to run the service",
+	"\t-N <orgname>    The name of the org or person who hosts the service",
+	"\t\t\t(Informational, but required)",
+	"\t-o <ostype>     The type of OS into which to install",
+	"\t\t\t(See 'Supported os types' below)",
+	"\nOptional: (with [default])\n",
+	"\t-b <bundle-url> The URL at which the bundle file will be published",
+	"\t\t\t[https://<sitename>/<sitename>.notary]",
+	"\t-p <http_port>  HTTP port to listen on [80]",
+	"\t-s <ssl_port>   SSL port to listen on [443]",
+	"\t-i <address>    IP address to listen on for incoming connections [all]",
+	"\t-u <username>   Name of user to drop privileges to [nobody]",
+	"\t-g <group>      Name of group to drop privileges to [nogroup]",
+	"\t-a              Auto-create user and/or group if they dont exist [no]",
+	"\nor",
+	"\t-h	        Print this help message.\n",
+	"Suppored os types are:\n\n\t" + supported + "\n",
+	"More information is available at: https://github.com/moxie0/Convergence/wiki\n" ]
+	print "\n".join(s)
+	return 1
 
 def make_os_installer(config):
 	retval = 0;
@@ -133,10 +145,10 @@ def make_os_installer(config):
 	return retval
 
 def report(core, os):
-	service_defn = os.service_init_dst
+	service_defn = os.service_init_path
 	service_data = os.service_data_dir
 	service_config = os.service_config_file
-	conv_db = core.conv_db_dst
+	conv_db = core.conv_db_path
 	bundle = os.bundle_path_final()
 	key = os.key_path_final()
 	print "\nINSTALL REPORT\n=============\n"

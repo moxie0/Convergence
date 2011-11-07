@@ -175,8 +175,8 @@ class Config(Base):
 			retval = 0
 		# requested os is known ??
 		os = OS(self.me, self)
-		config.os_install = os.translate_supported_os(config.os)
-		retval = ( config.os_install is not None )
+		self.os_install = os.translate_supported_os(self.os)
+		retval = ( self.os_install is not None )
 		# the bundle_url should be checked in some way
 		return retval
 

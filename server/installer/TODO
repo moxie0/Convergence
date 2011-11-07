@@ -1,7 +1,0 @@
-
-- the username and groupname are not used (but need to be)
-- the bundle cannot be auto-created as the bundle creation
-  script is prompted (or we generate it auto-magically)
-- command-line arg verification does not look at the uname/gname
-  values.  No platform independent mechanism to do 'getent passwd' etc.
-

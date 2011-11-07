@@ -335,7 +335,6 @@ class OS(Base):
 	def create_group(self, gname):
 		msg = "Create group '" + gname + "'"
 		cmd = self.create_group_cmd(gname)
-		retval = ( 0 == os.system(cmd) )
 		return self.run_and_report(cmd, msg)
 
 	# auto-create any missing user/group

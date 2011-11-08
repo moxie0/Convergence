@@ -84,14 +84,26 @@ ConnectionManager.prototype.setProxyTunnel = function(proxyInfo) {
 };
 
 ConnectionManager.prototype.initializeWorkerFactory = function() {
-  return Components.classes["@mozilla.org/threads/workerfactory;1"]
-  .createInstance(Components.interfaces.nsIWorkerFactory);
+  try {
+    return Components.classes["@mozilla.org/threads/workerfactory;1"]
+    .createInstance(Components.interfaces.nsIWorkerFactory);
+  } catch (e) {
+    dump("Unable to initialize workerfactory, assuming Gecko 8.\n");
+    return null;
+  }
 };
 
 ConnectionManager.prototype.spawnConnection = function(clientSocket) {
   dump("Spawning connectionworker...\n");
 
-  var worker            = this.workerFactory.newChromeWorker("chrome://convergence/content/workers/ConnectionWorker.js");
+  var worker;
+
+  if (this.workerFactory != null) {
+    worker = this.workerFactory.newChromeWorker("chrome://convergence/content/workers/ConnectionWorker.js");
+  } else {
+    worker = new ChromeWorker("chrome://convergence/content/workers/ConnectionWorker.js");
+  }
+
   var connectionManager = this;
   worker.onmessage      = function(event) {
     connectionManager.shuffleWorker.postMessage({'type' : TYPE_CONNECTION, 
@@ -128,8 +140,14 @@ ConnectionManager.prototype.initializeShuffleWorker = function() {
   this.wakeupWrite = socketPair[1];
   
   var connectionManager = this;
-  var shuffleWorker     = this.workerFactory
-  .newChromeWorker("chrome://convergence/content/workers/ShuffleWorker.js");
+  var shuffleWorker;
+
+  if (this.workerFactory != null) {
+    shuffleWorker = this.workerFactory
+      .newChromeWorker("chrome://convergence/content/workers/ShuffleWorker.js");
+  } else {
+    shuffleWorker = new ChromeWorker("chrome://convergence/content/workers/ShuffleWorker.js");
+  }
 
   shuffleWorker.onmessage = function(event) {
     dump("ShuffleWorker accepted connection: " + event.data.clientSocket + "\n");

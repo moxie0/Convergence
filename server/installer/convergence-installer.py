@@ -37,6 +37,8 @@ version		= "0.1"
 ME 		= os.path.basename(sys.argv[0])
 CONV_DIR	= os.path.join(os.path.dirname(sys.argv[0]), '..')
 
+os.environ['PATH'] = os.pathsep.join(['/usr/bin/', '/usr/local/bin'])
+
 def parseOptions(argv):
 	# ignore for now: needs to be written into the service config
 	uname			= 'nobody'
@@ -139,6 +141,8 @@ def make_os_installer(config):
 	# Create the real OS installer
 	if ( config.os_install == 'rhel6' ):
 		retval = convergence_installer.RHEL6(ME, config)
+	elif ( config.os_install == 'ubu11' ):
+		retval = convergence_installer.UBU11(ME, config)
 	else:
 		# UNREACHED: should never happen as the config verifies the OS
 		sys.exit('Unsupported OS')
@@ -169,6 +173,7 @@ def main(argv):
 	config = parseOptions(argv)
 	core = convergence_installer.Core(ME, config)
 	os_inst = make_os_installer(config)
+	retval = 1
 	if ( config.auto_create ):
 		retval = os_inst.auto_create_user_group()
 	if ( retval ):

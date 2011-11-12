@@ -189,16 +189,10 @@ class Core(Base):
 
 	def __init__(self, ME, config):
 		Base.__init__(self, ME)
-		# Where will the software be installed?
-		self.install_dir		= '/usr/bin'
-		# prefix for path to all the convergence command-line tools
-		self.util_prefix		= os.path.join(
-			self.install_dir, conv_svc 
-		)
-		self.core_gencert		= self.util_prefix + '-gencert'
-		self.core_bundle		= self.util_prefix + '-bundle'
-		self.core_createdb		= self.util_prefix + '-createdb'
-		self.core_notary		= self.util_prefix + '-notary'
+		self.core_gencert		= conv_svc + '-gencert'
+		self.core_bundle		= conv_svc + '-bundle'
+		self.core_createdb		= conv_svc + '-createdb'
+		self.core_notary		= conv_svc + '-notary'
 		# install script
 		self.install_convergence	= 'python ./setup.py install'
 		# database path (*nix type, unknown elsewhere)
@@ -268,8 +262,6 @@ class OS(Base):
 		self.service_defn_src_file	= ''
 		# Where do we write a loadable config for the init script
 		self.service_config_file	= ''
-		# What command will start the service?
-		self.service_start_cmd		= ''
 		# What command will make the service auto start
 		self.service_auto_start_cmd	= ''
 		# What packages are required
@@ -282,8 +274,10 @@ class OS(Base):
 		# Map of os type to the single definition of how to do it
 		# e.g rhel6 and fc14 are the same.
 		self.supported_os	= {
-			'rhel6': 'rhel6',
-			'fc14':  'rhel6'
+			'rhel6': 	'rhel6',
+			'fc14':  	'rhel6',
+			'ubu10':	'ubu11',
+			'ubu11':	'ubu11',
 		}
 
 	# where is the final location of the cert
@@ -387,28 +381,10 @@ class OS(Base):
 		self.report(retval, msg)
 		return retval
 
-	# Standard practice is to have all args passed to the daemon
-	# from the init script to have be defined in a 'config' file
-	# which the init script loads.
-	# This creates that 'config' file for the init script to load.  
-	# It may not be so useful here, as a change of most values i
-	# requires a regeneration of the bundle and thus its re-publication.
-	def make_service_config(self):
-		msg = "Service configuration exists"
-		config = self.config # shorthand
-		dst = self.service_config_file 
-		f = open(dst, "w")
-		param = ["PORT=" + str(config.http), "SSL=" + str(config.ssl), "CERT=" + self.cert_path(), "KEY=" + self.key_path(), "USER=" + config.uname, "GROUP=" + config.gname, "INTERFACE=" + config.interf]
-		f.write('\n'.join(param))
-		f.close()
-		retval = os.path.isfile(dst)
-		self.report(retval, msg)
-		return retval
-
 	# Start the service using the generated service (init script) file
 	def service_start(self):
 		msg = "Service is just started"
-		cmd = self.service_start_cmd
+		cmd = self.service_start_cmd()
 		return self.run_and_report(cmd, msg)
 
 	# Configure service auto start
@@ -454,30 +430,69 @@ class sysv_nix(OS):
 
 	def __init__(self, ME, config):
 		OS.__init__(self, ME, config)
-		self.service_init_path		= '/etc/rc.d/init.d/' + conv_svc
 		self.service_data_dir		= '/etc/' + conv_svc
-		self.service_start_cmd		= self.service_init_path + ' start'
-		# not sure how supported this is across Linux distros
-		self.service_auto_start_cmd	= 'chkconfig ' + conv_svc + ' on'
+		self.depend_packages		= [
+			'python-twisted-web', 
+			'python-twisted-names', 
+			'm2crypto'
+			]
 
+	def service_start_cmd(self):
+		return self.service_init_path + ' start'
+
+	def create_nonpriv_user_cmd(self, uname, gname):
+		return 'useradd -d /tmp -g ' + gname + ' -M -N -s /sbin/false ' + uname
+
+	def create_group_cmd(self, gname):
+		return 'groupadd ' + gname
+
+
+# OS specifics for RedHat Enterprise Linux 6 (and recent Fedora Core releases)
+class UBU11(sysv_nix):
+
+	def __init__(self, ME, config):
+		sysv_nix.__init__(self, ME, config)
+		# override
+		self.service_init_path		= '/etc/init.d/' + conv_svc
+		self.service_init_src		= os.path.join(self.config.unpack_dir, 'init-script', conv_svc + '.ubu11')
+		self.service_config_file	= '/etc/default/' + conv_svc
+		self.depend_install_cmd		= 'apt-get -y install'
+		self.service_auto_start_cmd	= 'update-rc.d ' + conv_svc + ' defaults'
+
+	def make_service_config(self):
+		msg = "Service configuration exists"
+		config = self.config # shorthand
+		dst = self.service_config_file 
+		f = open(dst, "w")
+		param = ["-p " + str(config.http), "-s " + str(config.ssl), "-c " + self.cert_path(), "-k " + self.key_path(), "-u " + config.uname, "-g " + config.gname]
+		if ( '' != config.interf ):
+			param.append('-i ' + config.interf)
+		f.write('ARGS="' + ' '.join(param) + '"')
+		f.close()
+		retval = os.path.isfile(dst)
+		self.report(retval, msg)
+		return retval
 
 # OS specifics for RedHat Enterprise Linux 6 (and recent Fedora Core releases)
 class RHEL6(sysv_nix):
 
 	def __init__(self, ME, config):
 		sysv_nix.__init__(self, ME, config)
+		self.service_init_path		= '/etc/rc.d/init.d/' + conv_svc
 		self.service_init_src		= os.path.join(self.config.unpack_dir, 'init-script', conv_svc + '.rhel6')
 		self.service_config_file	= '/etc/sysconfig/' + conv_svc
-		self.depend_packages		= [
-			'python-twisted-web', 
-			'python-twisted-names', 
-			'm2crypto'
-			]
 		self.depend_install_cmd		= 'yum -y install'
+		self.service_auto_start_cmd	= 'chkconfig ' + conv_svc + ' on'
 
-	def create_nonpriv_user_cmd(self, uname, gname):
-		return 'useradd -d /tmp -g ' + gname + ' -M -N -s /sbin/nologin ' + uname
-
-	def create_group_cmd(self, gname):
-		return 'groupadd ' + gname
+	def make_service_config(self):
+		msg = "Service configuration exists"
+		config = self.config # shorthand
+		dst = self.service_config_file 
+		f = open(dst, "w")
+		param = ["PORT=" + str(config.http), "SSL=" + str(config.ssl), "CERT=" + self.cert_path(), "KEY=" + self.key_path(), "USER=" + config.uname, "GROUP=" + config.gname, "INTERFACE=" + config.interf]
+		f.write('\n'.join(param))
+		f.close()
+		retval = os.path.isfile(dst)
+		self.report(retval, msg)
+		return retval
 

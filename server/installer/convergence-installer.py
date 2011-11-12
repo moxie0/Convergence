@@ -37,7 +37,7 @@ version		= "0.1"
 ME 		= os.path.basename(sys.argv[0])
 CONV_DIR	= os.path.join(os.path.dirname(sys.argv[0]), '..')
 
-os.environ['PATH'] = os.pathsep.join(['/usr/bin/', '/usr/local/bin'])
+os.environ['PATH'] = os.environ['PATH'] + os.pathsep.join(['/usr/bin/', '/usr/local/bin'])
 
 def parseOptions(argv):
 	# ignore for now: needs to be written into the service config

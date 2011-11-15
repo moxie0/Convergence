@@ -97,8 +97,11 @@ def promptForBundleInfo():
 
         if host is not None:
             bundle['hosts'].append(host)
+        elif count == 1:
+            print "\n" + textwrap.fill("Sorry, you must specify at least one physical host!") + "\n"
+            continue
         else:
-            break
+            break;
         
         count = count + 1
     

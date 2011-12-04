@@ -91,12 +91,12 @@ ConvergenceClientSocket.prototype.negotiateSSL = function() {
     throw "Error setting auth certificate hook!";
   }
 
-  var callbackFunction = SSL.types.SSLGetClientAuthData(clientAuth);
-  var status           = SSL.lib.SSL_GetClientAuthDataHook(this.fd, callbackFunction, null);
+  // var callbackFunction = SSL.types.SSLGetClientAuthData(clientAuth);
+  // var status           = SSL.lib.SSL_GetClientAuthDataHook(this.fd, callbackFunction, null);
 
-  if (status == -1) {
-    throw "Error setting client auth certificate hook!";
-  }
+  // if (status == -1) {
+  //   throw "Error setting client auth certificate hook!";
+  // }
 
   var status = SSL.lib.SSL_ResetHandshake(this.fd, NSPR.lib.PR_FALSE);
 

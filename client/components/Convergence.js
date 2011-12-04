@@ -38,7 +38,7 @@ function Convergence() {
 
     this.initializeLocalProxy();
     this.initializeConnectionManager();
-
+    this.initializeRegularExpressions();
     this.registerProxyObserver();
     this.registerObserverService();
 
@@ -64,6 +64,7 @@ Convergence.prototype = {
   sqliteFile:         null,
   cacheFile:          null,
   certificateManager: null,
+  rfc1918:            null,
   timer:              Components.classes["@mozilla.org/timer;1"].createInstance(Components.interfaces.nsITimer),
 
   initializeCtypes: function() {
@@ -106,6 +107,14 @@ Convergence.prototype = {
     }
   },
 
+  initializeRegularExpressions: function() {
+    this.rfc1918 = new RegExp("(^10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$)|" +
+			      "(^172\\.1[6-9]\\.\\d{1,3}\\.\\d{1,3}$)|"  +
+			      "(^172\\.2[0-9]\\.\\d{1,3}\\.\\d{1,3}$)|"  +
+			      "(^172\\.3[0-1]\\.\\d{1,3}\\.\\d{1,3}$)|"  +
+			      "(^192\\.168\\.\\d{1,3}\\.\\d{1,3}$)");
+  },
+  
   initializeLocalProxy: function() {
     this.localProxy = new LocalProxy();
   },
@@ -283,9 +292,10 @@ Convergence.prototype = {
   },
 
   isWhitelisted: function(uri) {
-    return uri.host == "localhost" ||
-           uri.host == "127.0.0.1" ||
-           uri.host == "aus3.mozilla.org";    
+    return uri.host == "localhost"        ||
+           uri.host == "127.0.0.1"        ||
+           uri.host == "aus3.mozilla.org" ||
+           this.rfc1918.test(uri.host);
   },
   
   applyFilter : function(protocolService, uri, proxy) {

@@ -44,6 +44,13 @@ NSS.initialize = function(nssPath) {
                                  {'data' : ctypes.unsigned_char.ptr},
                                  {'len' : ctypes.uint32_t}]);
 
+  NSS.types.PLArenaPool = ctypes.StructType("PLArenaPool");
+
+  NSS.types.CERTCertificateList = ctypes.StructType("CERTCertificateList",
+						    [{'certs' : NSS.types.SECItem.ptr},
+                                                     {'len' : ctypes.int},
+                                                     {'arena' : NSS.types.PLArenaPool.ptr}]),
+
   NSS.types.CERTAVA = ctypes.StructType("CERTAVA",
      				[{'type' : NSS.types.SECItem},
                                  {'value' : NSS.types.SECItem}]);
@@ -80,11 +87,20 @@ NSS.initialize = function(nssPath) {
                                                    {'critical' : NSS.types.SECItem},
                                                    {'value' : NSS.types.SECItem}]);
 
-  NSS.types.PLArenaPool = ctypes.StructType("PLArenaPool");
-
   NSS.types.CERTCertDBHandle = ctypes.StructType("CERTCertDBHandle");
 
   NSS.types.PK11SlotInfo = ctypes.StructType("PK11SlotInfo");
+
+  NSS.types.PK11SlotListElement = ctypes.StructType("PK11SlotListElement",
+						    [{'next' : ctypes.StructType("PK11SlotListElement").ptr},
+                                                     {'prev' : ctypes.StructType("PK11SlotListElement").ptr},
+                                                     {'slot' : NSS.types.PK11SlotInfo.ptr},
+                                                     {'refCount' : ctypes.int}]),
+
+  NSS.types.PK11SlotList = ctypes.StructType("PK11SlotList",
+					     [{'head' : NSS.types.PK11SlotListElement.ptr},
+                                              {'tail' : NSS.types.PK11SlotListElement.ptr},
+                                              {'lock' : ctypes.StructType("PZLock").ptr}]),
 
   NSS.types.SECKEYPrivateKey = ctypes.StructType("SECKEYPrivateKey",
   					 [{'arena' : NSS.types.PLArenaPool.ptr},
@@ -97,16 +113,12 @@ NSS.initialize = function(nssPath) {
 
   NSS.types.SECKEYPublicKey = ctypes.StructType("SECKEYPublicKey");
 
-  NSS.types.PK11SlotInfo = ctypes.StructType("PK11SlotInfo");
-
   NSS.types.CERTSubjectPublicKeyInfo = ctypes.StructType("CERTSubjectPublicKeyInfo",
 							 [{'arena' : NSS.types.PLArenaPool.ptr},
                                                           {'algorithm' : NSS.types.SECAlgorithmID},
                                                           {'subjectPublicKey' : NSS.types.SECItem}]);
 
   NSS.types.CERTCertificateRequest = ctypes.StructType("CERTCertificateRequest");
-
-  NSS.types.CERTCertificateList = ctypes.StructType("CERTCertificateList");
 
   NSS.types.SEC_ASN1Template = ctypes.StructType("SEC_ASN1Template",
   					 [{'kind' : ctypes.unsigned_long},
@@ -219,6 +231,28 @@ NSS.initialize = function(nssPath) {
     						NSS.types.CERTCertificate.ptr,
     						NSS.types.CERTCertDBHandle.ptr,
     						ctypes.char.ptr),
+    
+    CERT_FindCertByDERCert : sharedLib.declare("CERT_FindCertByDERCert",
+					       ctypes.default_abi,
+					       NSS.types.CERTCertificate.ptr,
+					       NSS.types.CERTCertDBHandle.ptr,
+					       NSS.types.SECItem.ptr),
+
+    CERT_VerifyCertNow : sharedLib.declare("CERT_VerifyCertNow",
+					   ctypes.default_abi,
+					   ctypes.int,
+					   NSS.types.CERTCertDBHandle.ptr,
+					   NSS.types.CERTCertificate.ptr,
+					   ctypes.int,
+					   ctypes.int,
+					   ctypes.voidptr_t),
+
+    CERT_CertChainFromCert : sharedLib.declare("CERT_CertChainFromCert",
+					       ctypes.default_abi,
+					       NSS.types.CERTCertificateList.ptr,
+					       NSS.types.CERTCertificate.ptr,
+					       ctypes.int,
+					       ctypes.int),
 
     PK11_FindKeyByAnyCert : sharedLib.declare("PK11_FindKeyByAnyCert",
     					      ctypes.default_abi,
@@ -229,6 +263,17 @@ NSS.initialize = function(nssPath) {
     PK11_GetInternalKeySlot : sharedLib.declare("PK11_GetInternalKeySlot",
     						ctypes.default_abi,
     						NSS.types.PK11SlotInfo.ptr),
+
+    PK11_GetAllSlotsForCert : sharedLib.declare("PK11_GetAllSlotsForCert",
+						ctypes.default_abi,
+						NSS.types.PK11SlotList.ptr,
+						NSS.types.CERTCertificate.ptr,
+						ctypes.voidptr_t),
+
+    PK11_GetTokenName : sharedLib.declare("PK11_GetTokenName",
+					  ctypes.default_abi,
+					  ctypes.char.ptr,
+					  NSS.types.PK11SlotInfo.ptr),
 
     PK11_GenerateKeyPair : sharedLib.declare("PK11_GenerateKeyPair",
 					     ctypes.default_abi,
@@ -310,6 +355,16 @@ NSS.initialize = function(nssPath) {
     					       NSS.types.CERTName.ptr,
     					       NSS.types.CERTValidity.ptr,
     					       NSS.types.CERTCertificateRequest.ptr),
+
+    CERT_DestroyCertificate : sharedLib.declare("CERT_DestroyCertificate",
+						ctypes.default_abi,
+						ctypes.int,
+						NSS.types.CERTCertificate.ptr),
+
+    CERT_DestroyCertificateList : sharedLib.declare("CERT_DestroyCertificateList",
+						    ctypes.default_abi,
+						    ctypes.int,
+						    NSS.types.CERTCertificateList.ptr),
 
     CERT_NewTempCertificate : sharedLib.declare("CERT_NewTempCertificate",
 						ctypes.default_abi,

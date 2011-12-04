@@ -38,8 +38,66 @@ function CertificateInfo(certificate, serialized) {
 
   this.md5         = this.calculateFingerprint(certificate, NSS.lib.SEC_OID_MD5, 16);
   this.sha1        = this.calculateFingerprint(certificate, NSS.lib.SEC_OID_SHA1, 20);
+  dump("Calculating PKI root...\n");
+  this.isLocalPki  = this.calculateTrustedPkiRoot(certificate);
   this.original    = this.encodeOriginalCertificate(certificate);
 }
+
+CertificateInfo.prototype.calculateTrustedPkiRoot = function(certificate) {
+  var status = NSS.lib.CERT_VerifyCertNow(NSS.lib.CERT_GetDefaultCertDB(),
+					  certificate, 1, 1, null);
+
+  dump("Certificate signature status: " + status + "\n");
+
+  var certificateChain   = NSS.lib.CERT_CertChainFromCert(certificate, 0, 1);
+
+  dump("Certificate chain length: " + certificateChain.contents.len + "\n");
+
+  var derCertificateArray = ctypes.cast(certificateChain.contents.certs, 
+					ctypes.ArrayType(NSS.types.SECItem, certificateChain.contents.len).ptr).contents;
+
+  var rootDerCertificate = derCertificateArray[certificateChain.contents.len-1];
+
+  dump("Root DER certificate: " + rootDerCertificate + "\n");
+
+  var rootCertificate    = NSS.lib.CERT_FindCertByDERCert(NSS.lib.CERT_GetDefaultCertDB(),
+							  rootDerCertificate.address());
+  
+  dump("Root certificate: " + rootCertificate + "\n");
+
+  var rootName         = NSS.lib.CERT_GetOrgUnitName(rootCertificate.contents.subject.address());
+
+  if (!rootName.isNull()) {
+    dump("Root name: " + rootName.readString() + "\n");
+  }
+
+  var slots    = NSS.lib.PK11_GetAllSlotsForCert(rootCertificate, null);
+
+  dump("Got slots: " + slots + "\n");
+
+  var slotNode      = slots.isNull() ? null : slots.contents.head;
+  var softwareToken = false;
+
+  dump("SlotNode: " + slotNode + "\n");
+
+  while (slotNode != null && !slotNode.isNull()) {
+    var tokenName = NSS.lib.PK11_GetTokenName(slotNode.contents.slot).readString();
+
+    dump("Token: " + tokenName + "\n");
+
+    if (tokenName == "Software Security Device") {
+      softwareToken = true;
+      break;
+    }
+
+    slotNode = slotNode.contents.next;
+  }
+
+  NSS.lib.CERT_DestroyCertificate(rootCertificate);
+  NSS.lib.CERT_DestroyCertificateList(certificateChain);
+
+  return softwareToken;
+};
 
 CertificateInfo.prototype.encodeOriginalCertificate = function(certificate) {
   var derCert = certificate.contents.derCert;

@@ -44,6 +44,10 @@ ActiveNotaries.prototype.isNotaryBounceEnabled = function() {
   return this.settings['notaryBounceEnabled'];
 };
 
+ActiveNotaries.prototype.getMaxNotaryQuorum = function() {
+  return this.settings['maxNotaryQuorum'];
+};
+
 ActiveNotaries.prototype.deserializeNotaries = function(serializedNotaries) {
   var notaries = new Array();
 
@@ -61,20 +65,103 @@ ActiveNotaries.prototype.checkNotaryValidity = function(host, port, certificate)
   return certificate.sha1 == notaryFingerprint;
 };
 
-ActiveNotaries.prototype.buildCheckNotaries = function() {
-  if (this.notaries.length > 1 && this.isNotaryBounceEnabled()) {
-    dump("Setting bounce notary: " + this.notaries + "\n");
-    var bounceNotaryIndex = Math.floor(Math.random()* this.notaries.length);
-    var checkNotaries     = this.notaries.slice(0);
-    var bounceNotary      = this.notaries[bounceNotaryIndex];
-    checkNotaries.splice(bounceNotaryIndex, 1);    
+ActiveNotaries.prototype.checkHostValidity = function(host, port, certificate) {
+  dump("Checking host validity...\n");
+  var target              = host + ":" + port;
+  var results             = this.buildCheckNotaries();
+  var bounceNotary        = results[0];
+  var checkNotaries       = results[1];
+  var verdictDetail       = new Array();
 
-    return [bounceNotary, checkNotaries];
+  var successCount        = 0;
+  var checkedNotaryCount  = 0;
+
+  if (bounceNotary != null)
+    verdictDetail.push({'notary' : bounceNotary.name, 
+	                'status' : ConvergenceResponseStatus.ANONYMIZATION_RELAY});
+
+  for (var i in checkNotaries) {
+    dump("Checking checknotary: " + i + "\n");
+    var notaryResponse = checkNotaries[i].checkValidity(host, port, certificate, bounceNotary);
+
+    if (notaryResponse == ConvergenceResponseStatus.VERIFICATION_SUCCESS) {
+      successCount++;
+    } else if (this.isStandAsideResponse(notaryResponse)) {
+      checkedNotaryCount--;
+    }
+
+    checkedNotaryCount++;
+    verdictDetail.push({'notary' : checkNotaries[i].name, 'status' : notaryResponse});
+  }
+
+  var aggregateStatus = this.calculateAggregateStatus(successCount, checkedNotaryCount);
+
+  return {'status'      : aggregateStatus, 
+	  'target'      : target, 
+	  'certificate' : certificate.original,
+	  'details'     : verdictDetail};
+};
+
+ActiveNotaries.prototype.buildCheckNotaries = function() {
+  if ((this.getUniqueNotaryCount(this.notaries) > 1) && 
+      (this.isNotaryBounceEnabled())) 
+  {
+    dump("Setting bounce notary...\n");
+    var bounceNotaryIndex = Math.floor(Math.random()* this.notaries.length);
+    var bounceNotary      = this.notaries[bounceNotaryIndex];
+
+    return [bounceNotary, this.getUniqueNotaryQuorum(bounceNotary)];
   } else {
     dump("Not setting bounce notary...\n");
-    return [null, this.notaries];
+    return [null, this.getUniqueNotaryQuorum(null)];
   }
 };
+
+ActiveNotaries.prototype.getUniqueNotaryCount = function(notaryList) {
+  var countMap = {};
+  var counter  = 0;
+
+  for (var i=0;i<notaryList.length;i++) {
+    countMap[notaryList[i].getName()] = true;
+    dump("Added: " + notaryList[i].getName() + "\n");
+  }
+
+  for (var key in countMap) {
+    counter++;
+  }
+
+  return counter;
+};
+
+ActiveNotaries.prototype.removeNotariesByName = function(notaryList, name) {
+  for (var i=notaryList.length-1;i>=0;i--) {
+    if (notaryList[i].getName() == name) {
+      notaryList.splice(i, 1);
+    }
+  }
+
+  return notaryList;
+};
+
+ActiveNotaries.prototype.getUniqueNotaryQuorum = function(bounceNotary) {
+  var notaryQuorum = [];
+  var notaryList   = this.notaries.slice(0);
+
+  if (bounceNotary != null)
+    notaryList = this.removeNotariesByName(notaryList, bounceNotary.getName());
+
+  while ((notaryQuorum.length < this.getMaxNotaryQuorum()) && 
+	 (notaryList.length > 0)) 
+  {
+    var notary = notaryList[Math.floor(Math.random() * notaryList.length)];
+    notaryList = this.removeNotariesByName(notaryList, notary.getName());
+
+    notaryQuorum.push(notary);
+  }
+
+  return notaryQuorum;
+};
+
 
 ActiveNotaries.prototype.isStandAsideResponse = function(response) {
   return 
@@ -100,44 +187,6 @@ ActiveNotaries.prototype.calculateAggregateStatus = function(successCount, check
   }
 };
 
-ActiveNotaries.prototype.checkHostValidity = function(host, port, certificate) {
-  dump("Checking host validity...\n");
-  var target              = host + ":" + port;
-  var results             = this.buildCheckNotaries();
-  var bounceNotary        = results[0];
-  var checkNotaries       = results[1];
-  var verdictDetail       = new Array();
-
-  var status              = false;
-  var successCount        = 0;
-  var checkedNotaryCount  = 0;
-
-  if (bounceNotary != null)
-    verdictDetail.push({'notary' : bounceNotary.name, 
-	                'status' : ConvergenceResponseStatus.ANONYMIZATION_RELAY});
-
-  for (var i in checkNotaries) {
-    dump("Checking checknotary: " + i + "\n");
-    var status         = null;
-    var notaryResponse = checkNotaries[i].checkValidity(host, port, certificate, bounceNotary);
-
-    if (notaryResponse == ConvergenceResponseStatus.VERIFICATION_SUCCESS) {
-      successCount++;
-    } else if (this.isStandAsideResponse(notaryResponse)) {
-      checkedNotaryCount--;
-    }
-
-    checkedNotaryCount++;
-    verdictDetail.push({'notary' : checkNotaries[i].name, 'status' : notaryResponse});
-  }
-
-  var aggregateStatus = this.calculateAggregateStatus(successCount, checkedNotaryCount);
-
-  return {'status'      : aggregateStatus, 
-	  'target'      : target, 
-	  'certificate' : certificate.original,
-	  'details'     : verdictDetail};
-};
 
 ActiveNotaries.prototype.getNotary = function(host, port) {
   for (var i in this.notaries) {

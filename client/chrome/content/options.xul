@@ -51,6 +51,12 @@
 	    <radio id="majority" label="Require notary majority." />
 	    <radio id="minority" label="Require only one notary to agree." />
 	  </radiogroup>
+	  <separator />
+	  <hbox>
+	    <label value="Max subset of notaries to query: " control="notary-quorum"/>
+	    <textbox id="notary-quorum" type="number" min="1" max="20" value="3" 
+		     increment="1" decimalplaces="0" maxlength="2" size="2"/>
+	  </hbox>
 	</groupbox>
 	</vbox>
     </tabpanel>

@@ -28,6 +28,7 @@
 function Notary(serialized) {
   if (typeof serialized == 'undefined') {
     this.name             = null;
+    this.region           = null;
     this.bundleLocation   = null;
     this.enabled          = false;
     this.physicalNotaries = new Array();
@@ -37,6 +38,7 @@ function Notary(serialized) {
     this.name             = serialized.name;
     this.enabled          = serialized.enabled;
     this.bundleLocation   = serialized.bundle_location;
+    this.region           = serialized.region;
     this.open             = true;
     this.parent           = true;
     this.physicalNotaries = new Array();
@@ -213,6 +215,14 @@ Notary.prototype.update = function() {
     });
 };
 
+Notary.prototype.setRegion = function(region) {
+  this.region = region;
+};
+
+Notary.prototype.getRegion = function() {
+  return this.region;
+};
+
 Notary.prototype.getName = function() {
   return this.name;
 };
@@ -255,6 +265,7 @@ Notary.prototype.serializeForTransport = function() {
   var serialized = {'name'              : this.name,
   		    'enabled'           : this.enabled,
 		    'bundle_location'   : this.bundleLocation,
+		    'region'            : this.region,
 		    'physical_notaries' : serializedPhysicalNotaries};
 
   return serialized;
@@ -269,6 +280,9 @@ Notary.prototype.serialize = function(xmlDocument) {
   if (this.bundleLocation != null)
     proxyElement.setAttribute("bundle_location", this.bundleLocation);
 
+  if (this.region != null)
+    proxyElement.setAttribute("region", this.region);
+
   for (var i=0;i<this.physicalNotaries.length;i++) {
     var physicalElement = this.physicalNotaries[i].serialize(xmlDocument);
     proxyElement.appendChild(physicalElement);
@@ -279,11 +293,14 @@ Notary.prototype.serialize = function(xmlDocument) {
 
 Notary.prototype.deserialize = function(logicalElement, version) {
   if (version > 0) {
-    this.name            = logicalElement.getAttribute("name");
-    this.enabled         = (logicalElement.getAttribute("enabled") == "true");
+    this.name    = logicalElement.getAttribute("name");
+    this.enabled = (logicalElement.getAttribute("enabled") == "true");
     
     if (logicalElement.hasAttribute("bundle_location"))
       this.bundleLocation = logicalElement.getAttribute("bundle_location");
+
+    if (logicalElement.hasAttribute("region"))
+      this.region = logicalElement.getAttribute("region");
 
     var physicalNotaries = logicalElement.getElementsByTagName("physical-notary");
 
@@ -324,6 +341,9 @@ Notary.constructFromV1Json = function(notaryJson) {
   notary.setBundleLocation(notaryJson.bundle_location);
   notary.setEnabled(true);
   notary.setPhysicalNotaries(physicalNotaries);
+  
+  if (typeof notaryJson.region != 'undefined')
+    notary.setRegion(notaryJson.region);
   
   return notary;
 };

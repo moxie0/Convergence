@@ -38,6 +38,7 @@ function onOptionsSave() {
   settingsManager.setNotaryBounce(document.getElementById("notary-bounce").checked);
   settingsManager.setConnectivityErrorIsFailure(document.getElementById("connectivity-failure").checked);
   settingsManager.setVerificationThreshold(document.getElementById("threshold").selectedItem.id);
+  settingsManager.setMaxNotaryQuorum(document.getElementById("notary-quorum").value);
 
   settingsManager.setNotaryList(notaries);
   settingsManager.savePreferences();  
@@ -72,14 +73,31 @@ function onRemoveNotary() {
   updateNotarySettings();
 }
 
+function isDuplicateNotary(notaryOne, notaryTwo) {
+  if (notaryOne.getName() == notaryTwo.getName()) {
+    if (notaryOne.getRegion() == null ||
+	notaryTwo.getRegion() == null)
+      return true;
+
+    if (notaryOne.getRegion() == 
+	notaryTwo.getRegion())
+      return true;
+  }
+
+  return false;
+}
+
 function onAddNotary() {
   var retVal = {notary: null};
   window.openDialog("chrome://convergence/content/addNotary.xul", "dialog2", "modal", retVal).focus();
 
   if (retVal.notary) {
     for (var i=0;i<notaries.length;i++) {
-      if (notaries[i].getName() == retVal.notary.getName()) {
+      if (isDuplicateNotary(notaries[i], retVal.notary)) {
 	dump("Found duplicate: " + notaries[i].getName()+ "\n");
+	alert("Sorry, this notary conflicts with a notary that you already have configured." +
+	      "  You can only use two notaries from the same organization if they are"       +
+	      " configured  for seperate regions.");
 	return;
       }
     }
@@ -113,11 +131,13 @@ function updateAdvancedSettings() {
   var notaryBounceEnabled          = convergence.getSettingsManager().getNotaryBounce();
   var connectivityIsFailureEnabled = convergence.getSettingsManager().getConnectivityErrorIsFailure();
   var verificationThreshold        = convergence.getSettingsManager().getVerificationThreshold();
+  var maxQuorum                    = convergence.getSettingsManager().getMaxNotaryQuorum();
 
   document.getElementById("cache-certificates").checked   = cacheCertificatesEnabled;
   document.getElementById("notary-bounce").checked        = notaryBounceEnabled;
   document.getElementById("connectivity-failure").checked = connectivityIsFailureEnabled;
   document.getElementById("threshold").selectedItem       = document.getElementById(verificationThreshold);
+  document.getElementById("notary-quorum").value          = maxQuorum;
 };
 
 function updateCacheSettings(sortColumn, sortDirection) {
@@ -187,6 +207,14 @@ function getNotaryRowCount() {
   return count;
 };
 
+function getLogicalNotaryName(notary) {
+  if (notary.getRegion() != null) {
+    return notary.getName() + " (" + notary.getRegion() + ")";
+  }
+
+  return notary.getName();
+};
+
 function updateNotarySettings() {
   var notaryTree = getNotaryTree();
 
@@ -197,7 +225,7 @@ function updateNotarySettings() {
       var notary    = getNotaryForRow(row);
       var isLogical = (notary.parent == true);
 
-      if      (column.id == "notaryHost")     return (isLogical ? notary.getName() : notary.getHost());
+      if      (column.id == "notaryHost")     return (isLogical ? getLogicalNotaryName(notary) : notary.getHost());
       else if (column.id == "notaryHTTPPort") return (isLogical ? "" : notary.getHTTPPort());
       else if (column.id == "notarySSLPort")  return (isLogical ? "" : notary.getSSLPort());
     },  

@@ -59,10 +59,12 @@ function sendClientResponse(localSocket, certificateManager, certificateInfo) {
   localSocket.negotiateSSL(certificateManager, certificateInfo);
 };
 
-function checkCertificateValidity(certificateCache, activeNotaries, host, port, certificateInfo) {
+function checkCertificateValidity(certificateCache, activeNotaries, host, port, 
+				  certificateInfo, privatePkiExempt) 
+{
   var target = host + ":" + port;
 
-  if (certificateInfo.isLocalPki) {
+  if (privatePkiExempt && certificateInfo.isLocalPki) {
     dump("Certificate is a local PKI cert.\n");
     return {'status'      : true,
 	    'target'      : target,
@@ -119,7 +121,7 @@ onmessage = function(event) {
 
     var results = this.checkCertificateValidity(certificateCache, activeNotaries,
 						destination.host, destination.port,
-						certificateInfo);
+						certificateInfo, event.data.settings['privatePkiExempt']);
 
     if (results['status'] == false) {
       certificateInfo.commonName = new NSS.lib.buffer("Invalid Certificate");

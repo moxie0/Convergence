@@ -39,6 +39,8 @@ function onOptionsSave() {
   settingsManager.setConnectivityErrorIsFailure(document.getElementById("connectivity-failure").checked);
   settingsManager.setVerificationThreshold(document.getElementById("threshold").selectedItem.id);
   settingsManager.setMaxNotaryQuorum(document.getElementById("notary-quorum").value);
+  settingsManager.setPrivatePkiExempt(document.getElementById("private-pki-exempt").checked);
+  settingsManager.setPrivateIpExempt(document.getElementById("private-ip-exempt").checked);
 
   settingsManager.setNotaryList(notaries);
   settingsManager.savePreferences();  
@@ -132,12 +134,16 @@ function updateAdvancedSettings() {
   var connectivityIsFailureEnabled = convergence.getSettingsManager().getConnectivityErrorIsFailure();
   var verificationThreshold        = convergence.getSettingsManager().getVerificationThreshold();
   var maxQuorum                    = convergence.getSettingsManager().getMaxNotaryQuorum();
+  var privateIpExempt              = convergence.getSettingsManager().getPrivateIpExempt();
+  var privatePkiExempt             = convergence.getSettingsManager().getPrivatePkiExempt();
 
   document.getElementById("cache-certificates").checked   = cacheCertificatesEnabled;
   document.getElementById("notary-bounce").checked        = notaryBounceEnabled;
   document.getElementById("connectivity-failure").checked = connectivityIsFailureEnabled;
   document.getElementById("threshold").selectedItem       = document.getElementById(verificationThreshold);
   document.getElementById("notary-quorum").value          = maxQuorum;
+  document.getElementById("private-ip-exempt").checked    = privateIpExempt;
+  document.getElementById("private-pki-exempt").checked   = privatePkiExempt;
 };
 
 function updateCacheSettings(sortColumn, sortDirection) {

@@ -29,6 +29,8 @@ function SettingsManager() {
   this.cacheCertificatesEnabled     = true;
   this.notaryBounceEnabled          = true;
   this.connectivityIsFailureEnabled = true;
+  this.privateIpExempt              = true;
+  this.privatePkiExempt             = true;
   this.maxNotaryQuorum              = 3;
   this.verificationThreshold        = "majority";
   this.notaries                     = new Array();
@@ -59,6 +61,22 @@ SettingsManager.prototype.setConnectivityErrorIsFailure = function(val) {
 
 SettingsManager.prototype.getConnectivityErrorIsFailure = function() {
   return this.connectivityIsFailureEnabled;
+};
+
+SettingsManager.prototype.setPrivateIpExempt = function(val) {
+  this.privateIpExempt = val;
+};
+
+SettingsManager.prototype.getPrivateIpExempt = function() {
+  return this.privateIpExempt;
+};
+
+SettingsManager.prototype.setPrivatePkiExempt = function(val) {
+  this.privatePkiExempt = val;
+};
+
+SettingsManager.prototype.getPrivatePkiExempt = function() {
+  return this.privatePkiExempt;
 };
 
 SettingsManager.prototype.setVerificationThreshold = function(val) {
@@ -132,7 +150,8 @@ SettingsManager.prototype.getSerializedSettings = function() {
     'notaryBounceEnabled'          : this.notaryBounceEnabled,
     'connectivityIsFailureEnabled' : this.connectivityIsFailureEnabled,
     'verificationThreshold'        : this.verificationThreshold,
-    'maxNotaryQuorum'              : this.maxNotaryQuorum
+    'maxNotaryQuorum'              : this.maxNotaryQuorum,
+    'privatePkiExempt'             : this.privatePkiExempt
   };
 };
 
@@ -229,6 +248,8 @@ SettingsManager.prototype.savePreferences = function() {
   rootElement.setAttribute("cache_certificates", this.cacheCertificatesEnabled);
   rootElement.setAttribute("notary_bounce", this.notaryBounceEnabled);
   rootElement.setAttribute("connectivity_failure", this.connectivityIsFailureEnabled);
+  rootElement.setAttribute("private_pki_exempt", this.privatePkiExempt);
+  rootElement.setAttribute("private_ip_exempt", this.privateIpExempt);
   rootElement.setAttribute("threshold", this.verificationThreshold);
   rootElement.setAttribute("max_notary_quorum", this.maxNotaryQuorum);
   rootElement.setAttribute("version", 1);
@@ -352,6 +373,8 @@ SettingsManager.prototype.loadPreferences = function() {
   this.cacheCertificatesEnabled     = (rootElement.item(0).getAttribute("cache_certificates") == "true");
   this.notaryBounceEnabled          = (rootElement.item(0).getAttribute("notary_bounce") == "true");
   this.connectivityIsFailureEnabled = (rootElement.item(0).getAttribute("connectivity_failure") == "true");
+  this.privateIpExempt              = (rootElement.item(0).getAttribute("private_ip_exempt") == "true");
+  this.privatePkiExempt             = (rootElement.item(0).getAttribute("private_pki_exempt") == "true");
   this.verificationThreshold        = rootElement.item(0).getAttribute("threshold");
   this.maxNotaryQuorum              = rootElement.item(0).getAttribute("max_notary_quorum");
   this.version                      = rootElement.item(0).getAttribute("version");
@@ -366,6 +389,14 @@ SettingsManager.prototype.loadPreferences = function() {
 
   if (!rootElement.item(0).hasAttribute("connectivity_failure")) {
     this.connectivityIsFailureEnabled = true;
+  }
+
+  if (!rootElement.item(0).hasAttribute("private_pki_exempt")) {
+    this.privatePkiExempt = true;
+  }
+
+  if (!rootElement.item(0).hasAttribute("private_ip_exempt")) {
+    this.privateIpExempt = true;
   }
 
   if (!rootElement.item(0).hasAttribute("threshold")) {

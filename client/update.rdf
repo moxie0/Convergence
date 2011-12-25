@@ -14,7 +14,7 @@
               <RDF:Description>
                 <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
                 <em:minVersion>4.0</em:minVersion>
-                <em:maxVersion>8.*</em:maxVersion>
+                <em:maxVersion>9.*</em:maxVersion>
                 <em:updateLink>http://convergence.io/releases/firefox/convergence-0.08.application=x-xpinstall</em:updateLink>
                 <em:updateHash>sha1:19fdf4f62c5259d4d4edf87917693bbe46f7f011</em:updateHash>
               </RDF:Description>

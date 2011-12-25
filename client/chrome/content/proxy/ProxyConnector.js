@@ -23,32 +23,30 @@
 
 
 function ProxyConnector(proxyInfo) {
-  this.type = proxyInfo.type;
-  this.host = proxyInfo.host;
-  this.port = proxyInfo.port;
+  this.proxy = proxyInfo;
 }
 
 ProxyConnector.prototype.makeMultiConnection = function(destinations) {
-  if (this.type == "http") {
-    var proxyConnector = new HttpProxyConnector();
+  if (this.proxy.type == "http") {
+    var proxyConnector = new HttpProxyConnector(this.proxy);
     return proxyConnector.makeMultiConnection(destinations);
-  } else if (this.type == "socks") {
-    var proxyConnector = new SOCKS5Connector();
+  } else if (this.proxy.type == "socks") {
+    var proxyConnector = new SOCKS5Connector(this.proxy);
     return proxyConnector.makeMultiConnection(destinations);
   } else {
-    throw "Unsupported proxy type: " + this.type;
+    throw "Unsupported proxy type: " + this.proxy.type;
   }
 };
 
 ProxyConnector.prototype.makeConnection = function(destinationSocket, host, port) {
-  if (this.type == "http") {
-    var proxyConnector = new HttpProxyConnector();
+  if (this.proxy.type == "http") {
+    var proxyConnector = new HttpProxyConnector(this.proxy);
     proxyConnector.makeConnection(destinationSocket, host, port);
-  } else if (this.type == "socks") {
-    var proxyConnector = new SOCKS5Connector();
+  } else if (this.proxy.type == "socks") {
+    var proxyConnector = new SOCKS5Connector(this.proxy);
     proxyConnector.makeConnection(destinationSocket, host, port);
   } else {
-    throw "Unsupported proxy type: " + this.type;
+    throw "Unsupported proxy type: " + this.proxy.type;
   }
 
   return destinationSocket;

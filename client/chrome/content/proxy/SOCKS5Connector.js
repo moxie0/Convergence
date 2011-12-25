@@ -21,9 +21,9 @@
  *
  **/
 
-function SOCKS5Connector() {
+function SOCKS5Connector(proxy) {
   this.base = BaseProxyConnector;
-  this.base();
+  this.base(proxy);
 }
 
 SOCKS5Connector.prototype.sendClientHello = function(proxySocket) {

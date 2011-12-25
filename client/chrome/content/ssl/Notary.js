@@ -55,10 +55,18 @@ Notary.prototype.getHttpDestinations = function() {
   for (var i=0;i<this.physicalNotaries.length;i++) {
     dump("Adding: " + this.physicalNotaries[i].host + " : " + this.physicalNotaries[i].httpPort + "\n");
     destinations.push({"host" : this.physicalNotaries[i].host , 
-	               "port" : this.physicalNotaries[i].httpPort});
+                       "port" : this.physicalNotaries[i].httpPort});
   }
 
   return destinations;
+};
+
+Notary.prototype.getHttpProxy = function() {
+  return this.physicalNotaries[0].httpProxy;
+};
+
+Notary.prototype.getSslProxy = function() {
+  return this.physicalNotaries[0].sslProxy;
 };
 
 Notary.prototype.getSslDestinations = function() {
@@ -66,7 +74,7 @@ Notary.prototype.getSslDestinations = function() {
 
   for (var i=0;i<this.physicalNotaries.length;i++) {
     destinations.push({"host" : this.physicalNotaries[i].host , 
-	               "port" : this.physicalNotaries[i].sslPort});
+                       "port" : this.physicalNotaries[i].sslPort});
   }
 
   return destinations;
@@ -77,7 +85,7 @@ Notary.prototype.getBouncedDestinations = function() {
 
   for (var i=0;i<this.physicalNotaries.length;i++) {
     destinations.push({"host" : this.physicalNotaries[i].host , 
-	               "port" : 4242});
+                       "port" : 4242});
   }
 
   return destinations;
@@ -90,13 +98,13 @@ Notary.prototype.makeConnection = function(proxy) {
   if (typeof proxy != 'undefined' && proxy != null) {
     dump("Network proxy for notary: " + this.httpProxy + "\n");
     dump("Bouncing request through: " + proxy.getHttpDestinations() + " to: " + this.getBouncedDestinations() + "\n");
-    notarySocket       = new ConvergenceNotarySocket(proxy.getHttpDestinations(), this.httpProxy);
+    notarySocket       = new ConvergenceNotarySocket(proxy.getHttpDestinations(), this.getHttpProxy());
     var proxyConnector = new NotaryProxyConnector();
     proxyConnector.makeConnection(notarySocket, this.getBouncedDestinations());
   } else {
     dump("Making unbounced request...\n");
     dump("SSL proxy for notary: " + this.sslProxy + "\n");
-    notarySocket = new ConvergenceNotarySocket(this.getSslDestinations(), this.sslProxy);
+    notarySocket = new ConvergenceNotarySocket(this.getSslDestinations(), this.getSslProxy());
   }
 
   return notarySocket;
@@ -199,20 +207,20 @@ Notary.prototype.update = function() {
   var self = this;
 
   ConvergenceUtil.persistUrl(this.bundleLocation, function(temporaryFile) {
-      var notary = Notary.constructFromBundle(temporaryFile.path);
-      if (notary.version < this.version)
-	return;
-      
-      dump("Updating notary with new bundle...\n");
+    var notary = Notary.constructFromBundle(temporaryFile.path);
+    if (notary.version < this.version)
+      return;
+    
+    dump("Updating notary with new bundle...\n");
 
-      self.setName(notary.getName());
-      self.setBundleLocation(notary.getBundleLocation());
-      self.setPhysicalNotaries(notary.getPhysicalNotaries());
+    self.setName(notary.getName());
+    self.setBundleLocation(notary.getBundleLocation());
+    self.setPhysicalNotaries(notary.getPhysicalNotaries());
 
-      var observerService = Components.classes["@mozilla.org/observer-service;1"]
-	                    .getService(Components.interfaces.nsIObserverService);  
-      observerService.notifyObservers(observerService, "convergence-notary-updated", null);
-    });
+    var observerService = Components.classes["@mozilla.org/observer-service;1"]
+      .getService(Components.interfaces.nsIObserverService);  
+    observerService.notifyObservers(observerService, "convergence-notary-updated", null);
+  });
 };
 
 Notary.prototype.setRegion = function(region) {
@@ -263,10 +271,10 @@ Notary.prototype.serializeForTransport = function() {
   }
 
   var serialized = {'name'              : this.name,
-  		    'enabled'           : this.enabled,
-		    'bundle_location'   : this.bundleLocation,
-		    'region'            : this.region,
-		    'physical_notaries' : serializedPhysicalNotaries};
+                    'enabled'           : this.enabled,
+                    'bundle_location'   : this.bundleLocation,
+                    'region'            : this.region,
+                    'physical_notaries' : serializedPhysicalNotaries};
 
   return serialized;
 };

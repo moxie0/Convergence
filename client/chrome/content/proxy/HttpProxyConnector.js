@@ -22,9 +22,9 @@
  **/
 
 
-function HttpProxyConnector() {
+function HttpProxyConnector(proxy) {
   this.base = BaseProxyConnector;
-  this.base();
+  this.base(proxy);
 }
 
 HttpProxyConnector.prototype.readResponse = function(proxySocket) {

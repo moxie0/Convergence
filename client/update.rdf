@@ -9,14 +9,14 @@
 
         <RDF:li>
           <RDF:Description>
-            <em:version>0.08</em:version>
+            <em:version>0.09</em:version>
             <em:targetApplication>
               <RDF:Description>
                 <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
                 <em:minVersion>4.0</em:minVersion>
-                <em:maxVersion>8.*</em:maxVersion>
-                <em:updateLink>http://convergence.io/releases/firefox/convergence-0.08.application=x-xpinstall</em:updateLink>
-                <em:updateHash>sha1:19fdf4f62c5259d4d4edf87917693bbe46f7f011</em:updateHash>
+                <em:maxVersion>9.*</em:maxVersion>
+                <em:updateLink>http://convergence.io/releases/firefox/convergence-0.09.application=x-xpinstall</em:updateLink>
+                <em:updateHash>sha1:0edf5e64b794682f1f22ddba333e78890192b6e0</em:updateHash>
               </RDF:Description>
             </em:targetApplication>
           </RDF:Description>
@@ -25,7 +25,7 @@
       </RDF:Seq>
     </em:updates>
 
-    <em:signature>MIGTMA0GCSqGSIb3DQEBDQUAA4GBAGJbuAhmeDJmL9kD7R5Hyrt2UR3C5bowYMSr2lmWKfO0vQhMt71rt1NONVCv6i4lsp40NlR4eeUJZ5Z+ORKaEzsRns9OEkiGGIXBGZobM8gP13sxRL7dGN9gmUftHjpUeyHNWmyXxMhYpXpVjCRJ4xQuXq4+gjdy7bGgzOYbOy98</em:signature>
+    <em:signature>MIGTMA0GCSqGSIb3DQEBDQUAA4GBAIeHT33Ig2fPqwBAwrWM/SswS/yemAIz+o7Jkq7KVoR2uR0HzpilPrVfZsqlFl1LgPhw0p8APmbZBk1FQ0QgasWsYv6wV9LlMWx2TxQCcJ67ctNME4yGZ3a04bVdpgcR+hPeuhGjAEDBzLn84Lv7cl/na468EouT5jUJft6hUBir</em:signature>
 
   </RDF:Description>
 </RDF:RDF>

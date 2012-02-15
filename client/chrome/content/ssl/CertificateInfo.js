@@ -35,6 +35,8 @@ function CertificateInfo(certificate, serialized) {
   this.orgUnitName         = NSS.lib.CERT_GetOrgUnitName(certificate.contents.subject.address());
   this.altNames            = NSS.lib.CERT_GetCertificateNames(certificate, this.arena);
   this.verificationDetails = null;
+  this.status 		   = NSS.lib.CERT_VerifyCertNow(NSS.lib.CERT_GetDefaultCertDB(),
+					  certificate, 1, 1, null);
 
   this.md5         = this.calculateFingerprint(certificate, NSS.lib.SEC_OID_MD5, 16);
   this.sha1        = this.calculateFingerprint(certificate, NSS.lib.SEC_OID_SHA1, 20);
@@ -44,10 +46,7 @@ function CertificateInfo(certificate, serialized) {
 }
 
 CertificateInfo.prototype.calculateTrustedPkiRoot = function(certificate) {
-  var status = NSS.lib.CERT_VerifyCertNow(NSS.lib.CERT_GetDefaultCertDB(),
-					  certificate, 1, 1, null);
-
-  dump("Certificate signature status: " + status + "\n");
+  dump("Certificate signature status: " + this.status + "\n");
 
   var certificateChain   = NSS.lib.CERT_CertChainFromCert(certificate, 0, 1);
 
@@ -150,5 +149,6 @@ CertificateInfo.prototype.calculateFingerprint = function(certificate, type, len
 
   return fingerprintHex.readString();
 };
+
 
 

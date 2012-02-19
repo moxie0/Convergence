@@ -96,14 +96,14 @@ Notary.prototype.makeConnection = function(proxy) {
   var notarySocket;
 
   if (typeof proxy != 'undefined' && proxy != null) {
-    dump("Network proxy for notary: " + this.httpProxy + "\n");
+    dump("Network proxy for notary: " + this.getHttpProxy() + "\n");
     dump("Bouncing request through: " + proxy.getHttpDestinations() + " to: " + this.getBouncedDestinations() + "\n");
     notarySocket       = new ConvergenceNotarySocket(proxy.getHttpDestinations(), this.getHttpProxy());
     var proxyConnector = new NotaryProxyConnector();
     proxyConnector.makeConnection(notarySocket, this.getBouncedDestinations());
   } else {
     dump("Making unbounced request...\n");
-    dump("SSL proxy for notary: " + this.sslProxy + "\n");
+    dump("SSL proxy for notary: " + this.getSslProxy() + "\n");
     notarySocket = new ConvergenceNotarySocket(this.getSslDestinations(), this.getSslProxy());
   }
 

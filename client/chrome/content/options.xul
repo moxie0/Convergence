@@ -3,6 +3,7 @@
 
 <dialog id="convergence-options" title="Convergence Notary Preferences" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" width="620" height="450" buttons="accept,cancel" onload="onOptionsLoad();" ondialogaccept="return onOptionsSave();">
 
+<script src="tack/TackCertificate.js" />
 <script src="options.js" />
 
 <tabbox flex="1">

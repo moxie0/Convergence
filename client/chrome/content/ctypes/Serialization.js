@@ -49,6 +49,36 @@ Serialization.serializePointer = function(fd) {
   return address;
 };
 
+Serialization.incrementPointer = function(ptr, amount) {
+  var ptrString = ptr.toString();
+  var addressStart = ptrString.indexOf("0x");
+  var addressEnd   = ptrString.indexOf("\"", addressStart);
+  var address      = ptrString.substring(addressStart, addressEnd);
+
+  return this.add(new ctypes.UInt64(address), new ctypes.UInt64(amount));
+};
+
+Serialization.add = function(a, b) {  
+  const MAX_UINT = Math.pow(2, 32);  
+      
+  var alo = ctypes.UInt64.lo(a);  
+  var ahi = ctypes.UInt64.hi(a);  
+  var blo = ctypes.UInt64.lo(b);  
+  var bhi = ctypes.UInt64.hi(b);  
+  
+  var lo = alo + blo;  
+  var hi = 0;  
+  
+  if (lo >= MAX_UINT) {  
+    hi = lo - MAX_UINT;  
+    lo -= MAX_UINT;  
+  }  
+  
+  hi += (ahi + bhi);  
+  
+  return ctypes.UInt64.join(hi, lo);  
+};  
+
 // XXX Address 32bit systems!
 Serialization.deserializeDescriptor = function(serializedFd) {
   var int64 = new ctypes.UInt64(serializedFd);

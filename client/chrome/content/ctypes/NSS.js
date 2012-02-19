@@ -45,6 +45,37 @@ NSS.initialize = function(nssPath) {
                                  {'len' : ctypes.uint32_t}]);
 
   NSS.types.PLArenaPool = ctypes.StructType("PLArenaPool");
+  
+  NSS.types.PRArenaPool = ctypes.StructType("PRArenaPool");
+
+  NSS.types.ECFieldID = ctypes.StructType("ECFieldID", 
+                                          [{'size' : ctypes.int},
+                                           {'type' : ctypes.int},
+                                           {'prime' : NSS.types.SECItem},
+                                           {'k1' : ctypes.int},
+                                           {'k2' : ctypes.int},
+                                           {'k3' : ctypes.int}]);
+
+  NSS.types.ECCurve = ctypes.StructType("ECCurve",
+                                        [{'a' : NSS.types.SECItem},
+                                         {'b' : NSS.types.SECItem},
+                                         {'seed' : NSS.types.SECItem}]);
+
+  NSS.types.ECParams = ctypes.StructType("ECParams",
+                                         [{'arena' : NSS.types.PLArenaPool.ptr},
+                                          {'type' : ctypes.int},
+                                          {'fieldID' : NSS.types.ECFieldID},
+                                          {'curve' : NSS.types.ECCurve},
+                                          {'base' : NSS.types.SECItem},
+                                          {'order' : NSS.types.SECItem},
+                                          {'cofactor' : ctypes.int},
+                                          {'DEREncoding' : NSS.types.SECItem},
+                                          {'ECCurveName' : ctypes.int},
+                                          {'curveOID' : NSS.types.SECItem}]);
+
+  NSS.types.ECPublicKey = ctypes.StructType("ECPublicKey",
+                                            [{'ecParams' : NSS.types.ECParams},
+                                             {'publicValue' : NSS.types.SECItem}]);
 
   NSS.types.CERTCertificateList = ctypes.StructType("CERTCertificateList",
 						    [{'certs' : NSS.types.SECItem.ptr},
@@ -61,6 +92,14 @@ NSS.initialize = function(nssPath) {
   NSS.types.SECAlgorithmID = ctypes.StructType("SECAlgorithmID",
   				       [{'algorithm' : NSS.types.SECItem},
                                         {'parameters' : NSS.types.SECItem}]);
+
+
+  NSS.types.SECOidData = ctypes.StructType("SECOidData",
+                                           [{'oid' : NSS.types.SECItem},
+                                            {'offset' : ctypes.int},
+                                            {'desc' : ctypes.char.ptr},
+                                            {'mechanism' : ctypes.long},
+                                            {'supportedExtension' : ctypes.int}]);
 
   NSS.types.CERTSignedData  = ctypes.StructType("CERTSignedData",
     				       [{'data' : NSS.types.SECItem},
@@ -194,8 +233,11 @@ NSS.initialize = function(nssPath) {
   NSS.lib = {
     SEC_OID_MD5 : 3,
     SEC_OID_SHA1 : 4,
+    SEC_OID_SHA256 : 191,
     SEC_OID_X509_KEY_USAGE : 81,
     SEC_OID_NS_CERT_EXT_COMMENT : 75,
+    SEC_OID_SECG_EC_SECP256K1 : 219,
+    SEC_ASN1_OBJECT_ID : 6,
     CKM_RSA_PKCS_KEY_PAIR_GEN : 0,
     buffer : ctypes.ArrayType(ctypes.char),
     ubuffer : ctypes.ArrayType(ctypes.unsigned_char),
@@ -214,6 +256,14 @@ NSS.initialize = function(nssPath) {
     				     ctypes.unsigned_char.ptr,
     				     ctypes.unsigned_char.ptr,
     				     ctypes.int32_t),
+
+    PK11_Verify : sharedLib.declare("PK11_Verify",
+                                    ctypes.default_abi,
+                                    ctypes.int,
+                                    NSS.types.SECKEYPublicKey.ptr,
+                                    NSS.types.SECItem.ptr,
+                                    NSS.types.SECItem.ptr,
+                                    ctypes.voidptr_t),
 
     CERT_GetDefaultCertDB : sharedLib.declare("CERT_GetDefaultCertDB",
     					      ctypes.default_abi,
@@ -323,6 +373,11 @@ NSS.initialize = function(nssPath) {
 					      NSS.types.SECAlgorithmID.ptr,
 					      ctypes.int,
 					      NSS.types.SECItem.ptr),
+
+    SECOID_FindOIDByTag : sharedLib.declare("SECOID_FindOIDByTag",
+                                            ctypes.default_abi,
+                                            NSS.types.SECOidData.ptr,
+                                            ctypes.int),
 
 
     CERT_Hexify : sharedLib.declare("CERT_Hexify",
@@ -451,6 +506,19 @@ NSS.initialize = function(nssPath) {
 					 NSS.types.PLArenaPool.ptr,
 					 ctypes.int),
 
+    SECITEM_AllocItem : sharedLib.declare("SECITEM_AllocItem",
+                                          ctypes.default_abi,
+                                          NSS.types.SECItem.ptr,
+                                          NSS.types.PRArenaPool.ptr,
+                                          NSS.types.SECItem.ptr,
+                                          ctypes.int),
+
+    SECITEM_FreeItem : sharedLib.declare("SECITEM_FreeItem",
+                                         ctypes.default_abi,
+                                         ctypes.int,
+                                         NSS.types.SECItem.ptr,
+                                         ctypes.int),
+
     PORT_FreeArena : sharedLib.declare("PORT_FreeArena",
     				       ctypes.default_abi,
     				       ctypes.void_t,
@@ -486,6 +554,34 @@ NSS.initialize = function(nssPath) {
 					       NSS.types.CERTCertificate.ptr,
 					       ctypes.int,
 					       NSS.types.SECItem.ptr),
+
+    SECKEY_DecodeDERSubjectPublicKeyInfo : sharedLib.declare("SECKEY_DecodeDERSubjectPublicKeyInfo",
+                                                             ctypes.default_abi,
+                                                             NSS.types.CERTSubjectPublicKeyInfo.ptr,
+                                                             NSS.types.SECItem.ptr),
+
+    SECKEY_ExtractPublicKey : sharedLib.declare("SECKEY_ExtractPublicKey",
+                                                ctypes.default_abi,
+                                                NSS.types.SECKEYPublicKey.ptr,
+                                                NSS.types.CERTSubjectPublicKeyInfo.ptr),
+
+    SECKEY_DestroySubjectPublicKeyInfo : sharedLib.declare("SECKEY_DestroySubjectPublicKeyInfo",
+                                                           ctypes.default_abi,
+                                                           ctypes.int,
+                                                           NSS.types.CERTSubjectPublicKeyInfo.ptr),
+
+    DSAU_DecodeDerSigToLen : sharedLib.declare("DSAU_DecodeDerSigToLen",
+                                               ctypes.default_abi,
+                                               NSS.types.SECItem.ptr,
+                                               NSS.types.SECItem.ptr,
+                                               ctypes.int),
+
+//    CERT_FindCertExtensionByOID : sharedLib.declare("CERT_FindCertExtensionByOID",
+//                                                    ctypes.default_abi,
+//                                                    ctypes.int,
+//                                                    NSS.types.CERTCertificate.ptr,
+//                                                    NSS.types.SECItem.ptr,
+//                                                    NSS.types.SECItem.ptr),
   };
 
 };

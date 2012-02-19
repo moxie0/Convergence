@@ -44,6 +44,10 @@ function Convergence() {
 
     this.initializeNotaryUpdateTimer(false);
     dump("Convergence Setup Complete.\n");
+
+    // dump("Parsing tack...\n");
+    // var tackCertificate = new TackCertificate();
+    // dump("Tack parsing complete...\n");
   } catch (e) {
     dump("Initializing error: " + e + " , " + e.stack + "\n");
   }
@@ -398,3 +402,11 @@ loadScript(false, null, "ConnectionManager.js");
 loadScript(true, "ssl", "NativeCertificateCache.js");
 loadScript(false, null, "DatabaseHelper.js");
 loadScript(true, "util", "ConvergenceUtil.js");
+loadScript(true, "tack", "TackKey.js");
+loadScript(true, "tack", "TackSignature.js");
+loadScript(true, "tack", "BreakSignature.js");
+loadScript(true, "tack", "TackExtension.js");
+loadScript(true, "tack", "TackHash.js");
+loadScript(true, "tack", "Tack.js");
+loadScript(true, "tack", "TackCertificate.js");
+loadScript(true, "tack", "ECC.js");

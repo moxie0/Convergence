@@ -108,7 +108,6 @@ NSPR.initialize = function(nsprPath) {
     PR_IpAddrNull : 0,
     PR_SockOpt_Nonblocking : 0,
     PR_SockOpt_Reuseaddr: 2,
-    PR_SockOpt_NoDelay: 13,
     PR_INTERVAL_NO_WAIT : 0,
     PR_INTERVAL_NO_TMEOUT: ctypes.uint32_t(4294967295),
     PR_INTERVAL_MAX : 100000,
@@ -169,10 +168,6 @@ NSPR.initialize = function(nsprPath) {
     					 // ctypes.default_abi,
     					 // PRTimeParameters,
     					 // PRExplodedTime.ptr),
-
-    PR_GetError : sharedLib.declare("PR_GetError",
-				    ctypes.default_abi,
-				    ctypes.int),
 
     PR_GetConnectStatus : sharedLib.declare("PR_GetConnectStatus",
 					    ctypes.default_abi,

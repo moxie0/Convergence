@@ -1,6 +1,6 @@
 
 function Tack(secItem) {
-  const EXTENSION_HASH_LENGTH = 111;
+  const EXTENSION_HASH_LENGTH = 104;
 
   var tackKey   = new TackKey(secItem, 0);
   var tackSig   = new TackSignature(secItem);

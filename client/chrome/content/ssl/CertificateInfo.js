@@ -21,8 +21,6 @@
  * such as its fingerprint.
  *
  **/
-
-
 function CertificateInfo(certificate, serialized) {
   if (!(typeof serialized == 'undefined')) {
     this.deserialize(serialized);
@@ -36,11 +34,43 @@ function CertificateInfo(certificate, serialized) {
   this.altNames            = NSS.lib.CERT_GetCertificateNames(certificate, this.arena);
   this.verificationDetails = null;
 
-  this.md5         = this.calculateFingerprint(certificate, NSS.lib.SEC_OID_MD5, 16);
-  this.sha1        = this.calculateFingerprint(certificate, NSS.lib.SEC_OID_SHA1, 20);
-  dump("Calculating PKI root...\n");
-  this.isLocalPki  = this.calculateTrustedPkiRoot(certificate);
-  this.original    = this.encodeOriginalCertificate(certificate);
+  this.md5             = this.calculateFingerprint(certificate, NSS.lib.SEC_OID_MD5, 16);
+  this.sha1            = this.calculateFingerprint(certificate, NSS.lib.SEC_OID_SHA1, 20);
+  this.isLocalPki      = this.calculateTrustedPkiRoot(certificate);
+  this.tackCertificate = this.getTackCertificate(certificate);
+  this.original        = this.encodeOriginalCertificate(certificate);
+}
+
+CertificateInfo.prototype.getTackCertificate = function(certificate) {
+  var certificateChain    = NSS.lib.CERT_CertChainFromCert(certificate, 0, 1);
+  var derCertificateArray = ctypes.cast(certificateChain.contents.certs, 
+					ctypes.ArrayType(NSS.types.SECItem, 
+                                                         certificateChain.contents.len).ptr).contents;
+  var rootDerCertificate  = derCertificateArray[certificateChain.contents.len-1];
+  var rootCertificate     = NSS.lib.CERT_FindCertByDERCert(NSS.lib.CERT_GetDefaultCertDB(),
+							  rootDerCertificate.address());
+
+  if (rootCertificate == null)
+    return null;
+  
+  var name = NSS.lib.CERT_GetCommonName(rootCertificate.contents.subject.address());
+
+  if (name.isNull()) name = null;
+  else                name = name.readString();
+
+  if (name == "TACK") {
+    dump("Looks like a tack certificate...\n");
+    try {
+      return new TackCertificate(certificate);
+    } catch (e) {
+      dump("TACK construction exception: " + e + " , " + e.stack + "\n");
+      return null;
+    }
+  } else {
+    dump("Found non-tack root: " + name + "\n");
+  }
+  
+  return null;
 }
 
 CertificateInfo.prototype.calculateTrustedPkiRoot = function(certificate) {
@@ -49,20 +79,17 @@ CertificateInfo.prototype.calculateTrustedPkiRoot = function(certificate) {
 
   dump("Certificate signature status: " + status + "\n");
 
-  var certificateChain   = NSS.lib.CERT_CertChainFromCert(certificate, 0, 1);
+  if (status < 0)
+    return false;
 
-  dump("Certificate chain length: " + certificateChain.contents.len + "\n");
-
+  var certificateChain    = NSS.lib.CERT_CertChainFromCert(certificate, 0, 1);
   var derCertificateArray = ctypes.cast(certificateChain.contents.certs, 
-					ctypes.ArrayType(NSS.types.SECItem, certificateChain.contents.len).ptr).contents;
-
-  var rootDerCertificate = derCertificateArray[certificateChain.contents.len-1];
-
-  dump("Root DER certificate: " + rootDerCertificate + "\n");
-
-  var rootCertificate    = NSS.lib.CERT_FindCertByDERCert(NSS.lib.CERT_GetDefaultCertDB(),
+					ctypes.ArrayType(NSS.types.SECItem, 
+                                                         certificateChain.contents.len).ptr).contents;
+  var rootDerCertificate  = derCertificateArray[certificateChain.contents.len-1];
+  var rootCertificate     = NSS.lib.CERT_FindCertByDERCert(NSS.lib.CERT_GetDefaultCertDB(),
 							  rootDerCertificate.address());
-  
+
   dump("Root certificate: " + rootCertificate + "\n");
 
   var rootName         = NSS.lib.CERT_GetOrgUnitName(rootCertificate.contents.subject.address());

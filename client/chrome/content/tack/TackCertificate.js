@@ -9,6 +9,14 @@ function TackCertificate(certificate) {
   this.tackExtension = new TackExtension(extensionData);
 };
 
+TackCertificate.prototype.getTackKeyFingerprint = function() {
+  return this.tackExtension.tack.tackKey.getFingerprint();
+};
+
+TackCertificate.prototype.getTackGeneration = function() {
+  return this.tackExtension.tack.tackSig.generation;
+};
+
 TackCertificate.prototype.isTackExtension = function(secItemOid) {
   var TACK_OID = [0x2B, 0x06, 0x01, 0x04, 0x01, 0x82, 0xB0, 0x34, 0x01];
   

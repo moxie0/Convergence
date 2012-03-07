@@ -50,7 +50,7 @@ const TYPE_INITIALIZE = 1;
 const TYPE_CONNECTION = 2;
 
 function ConnectionManager(listenSocket, nssFile, sslFile, nsprFile, sqliteFile, 
-			   cacheFile, certificateManager, settingsManager) 
+			   cacheFile, tackFile, certificateManager, settingsManager) 
 {
   this.certificateManager    = certificateManager;
   this.settingsManager       = settingsManager;
@@ -59,6 +59,7 @@ function ConnectionManager(listenSocket, nssFile, sslFile, nsprFile, sqliteFile,
   this.sslFile               = sslFile;
   this.sqliteFile            = sqliteFile;
   this.cacheFile             = cacheFile;
+  this.tackFile              = tackFile;
   this.listenSocket          = listenSocket;
   this.proxyInfo             = null;
   this.buffer                = new NSPR.lib.buffer(5);
@@ -118,6 +119,7 @@ ConnectionManager.prototype.spawnConnection = function(clientSocket) {
 	              'sslFile' : this.sslFile.path,
 	              'sqliteFile' : this.sqliteFile.path,
 	              'cacheFile' : this.cacheFile.path,
+                      'tackFile' : this.tackFile.path,
   	              'notaries' : this.settingsManager.getSerializedNotaryList(), 
   	              'clientSocket' : clientSocket, 
 	              'settings' : this.settingsManager.getSerializedSettings(),

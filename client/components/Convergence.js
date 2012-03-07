@@ -35,6 +35,7 @@ function Convergence() {
     this.initializeSettingsManager();
     this.initializeCertificateManager();
     this.initializeCertificateCache();
+    this.initializeTackCache();
 
     this.initializeLocalProxy();
     this.initializeConnectionManager();
@@ -67,6 +68,7 @@ Convergence.prototype = {
   sslFile:            null,
   sqliteFile:         null,
   cacheFile:          null,
+  tackFile:           null,
   certificateManager: null,
   rfc1918:            null,
   timer:              Components.classes["@mozilla.org/timer;1"].createInstance(Components.interfaces.nsITimer),
@@ -106,6 +108,7 @@ Convergence.prototype = {
                                                      this.nsprFile,
                                                      this.sqliteFile,
                                                      this.cacheFile,
+                                                     this.tackFile,
                                                      this.certificateManager,
                                                      this.settingsManager);
     }
@@ -152,6 +155,19 @@ Convergence.prototype = {
     }
 
     return true;
+  },
+
+  initializeTackCache: function() {
+    this.tackFile = Components.classes["@mozilla.org/file/directory_service;1"]  
+      .getService(Components.interfaces.nsIProperties)  
+      .get("ProfD", Components.interfaces.nsIFile);  
+    
+    this.tackFile.append("tack.sqlite");
+
+    var databaseHelper = new DatabaseHelper(this.tackFile);
+
+    databaseHelper.initializeTack();
+    databaseHelper.close();
   },
 
   initializeCertificateCache: function() {
@@ -400,6 +416,7 @@ loadScript(true, "ssl", "Notary.js");
 loadScript(false, null, "SettingsManager.js");
 loadScript(false, null, "ConnectionManager.js");
 loadScript(true, "ssl", "NativeCertificateCache.js");
+loadScript(true, "ssl", "TackManager.js");
 loadScript(false, null, "DatabaseHelper.js");
 loadScript(true, "util", "ConvergenceUtil.js");
 loadScript(true, "tack", "TackKey.js");

@@ -50,6 +50,7 @@ importScripts("chrome://convergence/content/ctypes/NSPR.js",
 	      "chrome://convergence/content/ssl/Notary.js",
 	      "chrome://convergence/content/ssl/PhysicalNotary.js",
 	      "chrome://convergence/content/ssl/NativeCertificateCache.js",
+	      "chrome://convergence/content/ssl/TackManager.js",
 	      "chrome://convergence/content/ssl/ActiveNotaries.js",
 	      "chrome://convergence/content/ssl/CertificateManager.js",
 	      "chrome://convergence/content/ConvergenceResponseStatus.js");
@@ -59,10 +60,33 @@ function sendClientResponse(localSocket, certificateManager, certificateInfo) {
   localSocket.negotiateSSL(certificateManager, certificateInfo);
 };
 
-function checkCertificateValidity(certificateCache, activeNotaries, host, port, 
+function checkCertificateValidity(tackManager, certificateCache, 
+                                  activeNotaries, host, port, 
 				  certificateInfo, privatePkiExempt) 
 {
   var target = host + ":" + port;
+
+  dump("Checking TACK info...\n");
+  var tackInfo = tackManager.getTackInfo(host);
+
+  if (tackInfo != null) {
+    dump("Found tack info...\n");
+    if ((new Date().getTime() / 1000) <  (tackInfo.lastSeen + (tackInfo.lastSeen - tackInfo.activationTime)) &&
+        ((certificateInfo.tackCertificate == null) ||
+         (certificateInfo.tackCertificate.getTackKeyFingerprint() != tackInfo.tackKey)))
+    {
+      return {'status' : false,
+              'target' : target,
+              'certificate' : certificateInfo.original,
+              'details' : [{'notary' : 'TACK',
+                            'status' : ConvergenceResponseStatus.VERIFICATION_FAILURE}]};
+    }
+
+    tackManager.updateTackActivation(host, certificateInfo.tackCertificate);
+  } else if (certificateInfo.tackCertificate != null) {
+    dump("Caching newly seen tack...\n");
+    tackManager.cacheTackInfo(host, certificateInfo.tackCertificate);
+  }
 
   if (privatePkiExempt && certificateInfo.isLocalPki) {
     dump("Certificate is a local PKI cert.\n");
@@ -116,10 +140,12 @@ onmessage = function(event) {
     var certificateInfo    = new CertificateInfo(certificate);
     var certificateCache   = new NativeCertificateCache(event.data.cacheFile, 
 							event.data.settings['cacheCertificatesEnabled']);
-    
+    var tackManager        = new TackManager(event.data.tackFile);
+
     dump("Checking validity...\n");
 
-    var results = this.checkCertificateValidity(certificateCache, activeNotaries,
+    
+    var results = this.checkCertificateValidity(tackManager, certificateCache, activeNotaries,
 						destination.host, destination.port,
 						certificateInfo, event.data.settings['privatePkiExempt']);
 

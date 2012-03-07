@@ -47,25 +47,17 @@ CertificateInfo.prototype.calculateTrustedPkiRoot = function(certificate) {
   var status = NSS.lib.CERT_VerifyCertNow(NSS.lib.CERT_GetDefaultCertDB(),
 					  certificate, 1, 1, null);
 
-  dump("Certificate signature status: " + status + "\n");
+  if (status != 0) {
+    return false;
+  }
 
-  var certificateChain   = NSS.lib.CERT_CertChainFromCert(certificate, 0, 1);
-
-  dump("Certificate chain length: " + certificateChain.contents.len + "\n");
-
+  var certificateChain    = NSS.lib.CERT_CertChainFromCert(certificate, 0, 1);
   var derCertificateArray = ctypes.cast(certificateChain.contents.certs, 
 					ctypes.ArrayType(NSS.types.SECItem, certificateChain.contents.len).ptr).contents;
-
   var rootDerCertificate = derCertificateArray[certificateChain.contents.len-1];
-
-  dump("Root DER certificate: " + rootDerCertificate + "\n");
-
   var rootCertificate    = NSS.lib.CERT_FindCertByDERCert(NSS.lib.CERT_GetDefaultCertDB(),
 							  rootDerCertificate.address());
-  
-  dump("Root certificate: " + rootCertificate + "\n");
-
-  var rootName         = NSS.lib.CERT_GetOrgUnitName(rootCertificate.contents.subject.address());
+  var rootName           = NSS.lib.CERT_GetOrgUnitName(rootCertificate.contents.subject.address());
 
   if (!rootName.isNull()) {
     dump("Root name: " + rootName.readString() + "\n");

@@ -50,6 +50,10 @@ def main(argv):
     convergencePath = "/var/lib/convergence/"
     convergencedb   = convergencePath + "convergence.db"
 
+    if len(argv) > 0:
+        convergencePath, filename  = os.path.split(argv[0])
+        convergencedb = argv[0]
+
     if not os.path.exists(convergencePath):
         os.makedirs(convergencePath)
         

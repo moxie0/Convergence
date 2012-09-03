@@ -46,7 +46,7 @@ from convergence.ConnectChannel import ConnectChannel
 from convergence.ConnectRequest import ConnectRequest
 
 from convergence.verifier.NetworkPerspectiveVerifier import NetworkPerspectiveVerifier
-from convergence.verifier.GoogleCatalogVerifier import GoogleCatalogVerifier
+from convergence.verifier.DNSVerifier import DNSVerifier
 
 from OpenSSL import SSL
 from twisted.enterprise import adbapi
@@ -132,16 +132,16 @@ def usage():
     print "-k <key>       SSL private key location."
     print "-u <username>  Name of user to drop privileges to (defaults to 'nobody')"
     print "-g <group>     Name of group to drop privileges to (defaults to 'nogroup')"
-    print "-b <backend>   Verifier backend [perspective|google] (defaults to 'perspective')"
+    print "-b <backend>   Verifier backend [perspective|dns:host] (defaults to 'perspective')"
     print "-f             Run in foreground."
     print "-d             Debug mode."
     print "-h             Print this help message."
     print ""
 
 def initializeBackend(backend):
-    if   (backend == "perspective"): return NetworkPerspectiveVerifier()
-    elif (backend == "google"):      return GoogleCatalogVerifier()
-    else:                            raise getopt.GetoptError("Invalid backend: " + backend)
+    if   (backend == "perspective"):   return NetworkPerspectiveVerifier()
+    elif (backend.startswith("dns:")): return DNSVerifier(backend.split(":")[1])
+    else:                              raise getopt.GetoptError("Invalid backend: " + backend)
     
 def checkPrivileges(userName, groupName):                
     try:

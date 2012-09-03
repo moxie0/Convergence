@@ -21,16 +21,15 @@ import logging
 
 from Verifier import Verifier
 
-class GoogleCatalogVerifier(Verifier):
+class DNSVerifier(Verifier):
     """
     This class is responsible for checking a certificate fingerprint
-    in the Google Certificate Catalog.
+    via a DNS-based certificate catalog
     """
 
-    CATALOG_HOST = "certs.googlednstest.com"
-    
-    def __init__(self):
+    def __init__(self, host):
         Verifier.__init__(self)
+        self.host = host
 
     def _dnsLookupComplete(self, result, fingerprint):
         logging.debug("Catalog result: " + str(result[0][0].payload.data[0]))
@@ -42,7 +41,7 @@ class GoogleCatalogVerifier(Verifier):
 
     def verify(self, host, port, fingerprint):
         formatted = "".join(fingerprint.split(":")).lower()
-        deferred  = twisted.names.client.lookupText("%s.%s" % (formatted, self.CATALOG_HOST))
+        deferred  = twisted.names.client.lookupText("%s.%s" % (formatted, self.host))
 
         deferred.addCallback(self._dnsLookupComplete, fingerprint)
         deferred.addErrback(self._dnsLookupError)

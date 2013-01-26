@@ -263,20 +263,22 @@ Notary.prototype.setPhysicalNotaries = function(physicalNotaries) {
   this.physicalNotaries = physicalNotaries;
 };
 
-Notary.prototype.serializeForTransport = function() {
+Notary.prototype.serializeForTransport = function(callback) {
   var serializedPhysicalNotaries = new Array();
+  var count = this.physicalNotaries.length;
+  var self = this;
 
   for (var i=0;i<this.physicalNotaries.length;i++) {
-    serializedPhysicalNotaries.push(this.physicalNotaries[i].serializeForTransport());
+    this.physicalNotaries[i].serializeForTransport(function(spn) {
+      serializedPhysicalNotaries.push(spn);
+      count--;
+      if(count === 0) callback({'name'              : self.name,
+                                'enabled'           : self.enabled,
+                                'bundle_location'   : self.bundleLocation,
+                                'region'            : self.region,
+                                'physical_notaries' : serializedPhysicalNotaries});
+    });
   }
-
-  var serialized = {'name'              : this.name,
-                    'enabled'           : this.enabled,
-                    'bundle_location'   : this.bundleLocation,
-                    'region'            : this.region,
-                    'physical_notaries' : serializedPhysicalNotaries};
-
-  return serialized;
 };
 
 

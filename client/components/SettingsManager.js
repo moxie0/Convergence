@@ -132,16 +132,20 @@ SettingsManager.prototype.hasEnabledNotary = function() {
   return false;
 };
 
-SettingsManager.prototype.getSerializedNotaryList = function() {
+SettingsManager.prototype.getSerializedNotaryList = function(callback) {
   var serialized = new Array();
+  var count = 0;
   
   for (var i in this.notaries) {
     if (this.notaries[i].enabled) {
-      serialized.push(this.notaries[i].serializeForTransport());
+      count++;
+      this.notaries[i].serializeForTransport(function(sn) {
+        serialized.push(sn);
+        count--;
+        if(count === 0) callback(serialized);
+      });
     }
   }
-
-  return serialized;
 };
 
 SettingsManager.prototype.getSerializedSettings = function() {

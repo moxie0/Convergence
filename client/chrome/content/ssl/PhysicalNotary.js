@@ -80,7 +80,8 @@ PhysicalNotary.prototype.setHTTPPort = function(port) {
   this.httpPort = port;
 };
 
-PhysicalNotary.prototype.getProxiesForNotary = function() {
+PhysicalNotary.prototype.getProxiesForNotary = function(callback) {
+  var result = { };
   var ioService = Components.classes["@mozilla.org/network/io-service;1"]
   .getService(Components.interfaces.nsIIOService);
   
@@ -90,26 +91,26 @@ PhysicalNotary.prototype.getProxiesForNotary = function() {
   var httpUri             = ioService.newURI("http://" + this.host + ":" + this.httpPort, null, null);
   var sslUri              = ioService.newURI("https://" + this.host + ":" + this.sslPort, null, null);
 
-  var httpProxy           = proxyService.resolve(httpUri, null);
-  var sslProxy            = proxyService.resolve(sslUri, null);
-
-  var serializedHttpProxy = Serialization.serializeProxyInfo(httpProxy);
-  var serializedSslProxy  = Serialization.serializeProxyInfo(sslProxy);
-
-  return {'http_proxy' : serializedHttpProxy, 'ssl_proxy' : serializedSslProxy};
+  proxyService.asyncResolve(httpUri, null, { onProxyAvailable: function(aRequest, anURI, httpProxy, aStatus) {
+    result['http_proxy'] = Serialization.serializeProxyInfo(httpProxy);
+    if('ssl_proxy' in result) callback(result);
+  }});
+  proxyService.asyncResolve(sslUri, null, { onProxyAvailable: function(aRequest, anURI, sslProxy, aStatus) {
+    result['ssl_proxy'] = Serialization.serializeProxyInfo(sslProxy);
+    if('http_proxy' in result) callback(result);
+  }});
 };
 
-PhysicalNotary.prototype.serializeForTransport = function() {
-  var proxies    = this.getProxiesForNotary();
-
-  var serialized = {'host'        : this.host,
-  		    'ssl_port'    : this.sslPort,
-  		    'http_port'   : this.httpPort,
-  		    'fingerprint' : this.sha1Fingerprint,
-		    'http_proxy'  : proxies['http_proxy'],
-		    'ssl_proxy'   : proxies['ssl_proxy']};
-
-  return serialized;
+PhysicalNotary.prototype.serializeForTransport = function(callback) {
+  var self = this;
+  this.getProxiesForNotary(function(proxies) {
+    callback({'host'        : self.host,
+              'ssl_port'    : self.sslPort,
+  		      'http_port'   : self.httpPort,
+  		      'fingerprint' : self.sha1Fingerprint,
+		      'http_proxy'  : proxies['http_proxy'],
+		      'ssl_proxy'   : proxies['ssl_proxy']});
+  });
 };
 
 PhysicalNotary.prototype.serialize = function(xmlDocument) {

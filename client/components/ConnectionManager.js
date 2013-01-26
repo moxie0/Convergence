@@ -113,16 +113,19 @@ ConnectionManager.prototype.spawnConnection = function(clientSocket) {
     NSPR.lib.PR_Write(connectionManager.wakeupWrite, connectionManager.buffer, 5);
   };
 
-  worker.postMessage({'nsprFile' : this.nsprFile.path, 
-  	              'nssFile' : this.nssFile.path, 
-	              'sslFile' : this.sslFile.path,
-	              'sqliteFile' : this.sqliteFile.path,
-	              'cacheFile' : this.cacheFile.path,
-  	              'notaries' : this.settingsManager.getSerializedNotaryList(), 
-  	              'clientSocket' : clientSocket, 
-	              'settings' : this.settingsManager.getSerializedSettings(),
-	              'proxy' : this.proxyInfo,
-  	              'certificates' : this.certificateManager.serialize()});
+  var self = this;
+  this.settingsManager.getSerializedNotaryList(function(nl) {
+      worker.postMessage({'nsprFile' : self.nsprFile.path, 
+                      'nssFile' : self.nssFile.path, 
+                      'sslFile' : self.sslFile.path,
+                      'sqliteFile' : self.sqliteFile.path,
+                      'cacheFile' : self.cacheFile.path,
+                      'notaries' : nl,
+                      'clientSocket' : clientSocket, 
+                      'settings' : self.settingsManager.getSerializedSettings(),
+                      'proxy' : self.proxyInfo,
+                      'certificates' : self.certificateManager.serialize()});
+  });
 
   dump("Posted message to ConnectionWorker!\n");  
 };

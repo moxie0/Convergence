@@ -21,8 +21,8 @@ ConvergenceNotarySocket.prototype.writeBytes = function(buffer, length) {
   return this.connection.writeBytes(buffer, length);
 };
 
-ConvergenceNotarySocket.prototype.readString = function() {
-  return this.connection.readString();
+ConvergenceNotarySocket.prototype.readString = function(length) {
+  return this.connection.readString(length);
 };
 
 ConvergenceNotarySocket.prototype.readFully = function(length) {

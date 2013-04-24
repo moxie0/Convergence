@@ -129,11 +129,13 @@ ConvergenceClientSocket.prototype.writeBytes = function(buffer, length) {
   return NSPR.lib.PR_Write(this.fd, buffer, length);
 };
 
-ConvergenceClientSocket.prototype.readString = function() {
-  var buffer = new NSPR.lib.buffer(4096);
+ConvergenceClientSocket.prototype.readString = function(length) {
+  if (length === null) length = 4095;
+  else if (length <= 0) return null;
+  var buffer = new NSPR.lib.buffer(length + 1);
   var read;
 
-  while (((read = NSPR.lib.PR_Read(this.fd, buffer, 4095)) == -1) && 
+  while (((read = NSPR.lib.PR_Read(this.fd, buffer, length)) == -1) &&
 	 (NSPR.lib.PR_GetError() == NSPR.lib.PR_WOULD_BLOCK_ERROR))
   {
     dump("polling on read...\n");
@@ -151,21 +153,20 @@ ConvergenceClientSocket.prototype.readString = function() {
 };
 
 ConvergenceClientSocket.prototype.readFully = function(length) {
-  var buffer = new NSPR.lib.buffer(length);
-  var read;
+  var response = "";
+  var buffer;
+  var n = length;
 
-  while (((read = NSPR.lib.PR_Read(this.fd, buffer, length)) == -1) && 
-	 (NSPR.lib.PR_GetError() == NSPR.lib.PR_WOULD_BLOCK_ERROR))
-  {
-    if (!this.waitForInput(-1))
-      return null;
+  while ((buffer = this.readString(n)) != null) {
+    response += buffer;
+    n -= buffer.length;
   }
 
-  if (read != length) {
+  if (response.length != length) {
     throw "Assertion error on read fully (" + read + ", " + length + ")!";
   }
 
-  return buffer;
+  return response;
 };
 
 ConvergenceClientSocket.prototype.close = function() {

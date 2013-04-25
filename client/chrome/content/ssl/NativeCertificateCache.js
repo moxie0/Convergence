@@ -171,7 +171,7 @@ NativeCertificateCache.prototype.fetchAll = function(sortColumn, sortDirection) 
       id: SQLITE.lib.sqlite3_column_int64(preparedStatement, 0),
       location: SQLITE.lib.sqlite3_column_text(preparedStatement, 1).readString(),
       fingerprint: SQLITE.lib.sqlite3_column_text(preparedStatement, 2).readString(),
-      timestamp: new Date(SQLITE.lib.sqlite3_column_int64(preparedStatement, 3)),
+      timestamp: new Date(parseInt(SQLITE.lib.sqlite3_column_int64(preparedStatement, 3))),
     });
   }
 

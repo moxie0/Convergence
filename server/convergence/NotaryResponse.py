@@ -16,7 +16,7 @@
 # USA
 #
 
-import hashlib, json, base64, logging
+import hashlib, simplejson as json, base64, logging
 from M2Crypto import BIO, RSA
 
 # This class is responsible for formatting verification response

@@ -1,0 +1,8 @@
+/etc/issue
+
+Fedora release 14 (Laughlin)
+Fedora release 16 (Verne)
+CentOS Linux release 6.0 (Final)
+Ubuntu 11.10 \n \l
+
+

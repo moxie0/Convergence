@@ -209,6 +209,7 @@ def main(argv):
     database                      = initializeDatabase()
     sslFactory                    = initializeFactory(database, privateKey, verifier)
     connectFactory                = http.HTTPFactory(timeout=10)
+    connectFactory.verifier       = verifier
     connectFactory.protocol       = ConnectChannel
     
     reactor.listenSSL(sslPort, sslFactory, ServerContextFactory(certFile, keyFile),

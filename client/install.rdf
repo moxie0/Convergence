@@ -14,11 +14,22 @@
    
     <!-- Target Application this extension can install into, 
          with minimum and maximum supported versions. --> 
+    
+    <!-- Firefox -->
     <em:targetApplication>
       <Description>
         <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
         <em:minVersion>4.0</em:minVersion>
         <em:maxVersion>9.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+
+    <!-- Seamonkey -->
+    <em:targetApplication>
+      <Description>
+        <em:id>{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}</em:id>
+        <em:minVersion>2.3</em:minVersion>
+        <em:maxVersion>2.*.*</em:maxVersion>
       </Description>
     </em:targetApplication>
    
